@@ -22,20 +22,56 @@
   </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap');
-    body { font-family: 'Noto Serif SC', serif; }
+    
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    body { 
+      font-family: 'Noto Serif SC', serif;
+      font-size: 16px;
+    }
+    
+    /* 移动端优化 */
+    @media (max-width: 640px) {
+      body {
+        font-size: 15px;
+      }
+      .article-card {
+        padding: 1.25rem !important;
+      }
+      .article-title {
+        font-size: 1.125rem !important;
+      }
+      .article-source {
+        font-size: 0.7rem !important;
+        padding: 0.25rem 0.5rem !important;
+      }
+      .markdown-body h3 {
+        font-size: 1rem !important;
+        margin-top: 1.25rem !important;
+      }
+      .timeline-date {
+        font-size: 1rem !important;
+      }
+      .timeline-marker {
+        width: 0.625rem !important;
+        height: 0.625rem !important;
+      }
+    }
     
     .markdown-body {
-      line-height: 1.8;
+      line-height: 1.9;
       color: rgba(234, 234, 234, 0.85);
     }
     
     .markdown-body h3 {
-      font-size: 1.1rem;
+      font-size: 1.125rem;
       font-weight: 700;
       color: #67e8f9;
       margin-top: 1.5rem;
-      margin-bottom: 0.75rem;
-      padding-bottom: 0.25rem;
+      margin-bottom: 0.875rem;
+      padding-bottom: 0.375rem;
       border-bottom: 1px solid rgba(103, 232, 249, 0.2);
     }
     
@@ -44,19 +80,20 @@
     }
     
     .markdown-body p {
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.875rem;
     }
     
     .markdown-body ul {
       list-style: none;
       padding-left: 0;
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
     }
     
     .markdown-body li {
       position: relative;
       padding-left: 1.5rem;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.625rem;
+      line-height: 1.7;
     }
     
     .markdown-body li::before {
@@ -65,6 +102,8 @@
       left: 0;
       color: #67e8f9;
       font-weight: bold;
+      font-size: 1.2rem;
+      line-height: 1.4;
     }
     
     .markdown-body strong {
@@ -74,11 +113,11 @@
     
     /* 引用块样式（金句） */
     .markdown-body blockquote {
-      border-left: 3px solid #22d3ee;
-      padding: 1rem 1.5rem;
-      margin: 1.5rem 0;
-      background: linear-gradient(90deg, rgba(34, 211, 238, 0.15) 0%, transparent 100%);
-      border-radius: 0 8px 8px 0;
+      border-left: 4px solid #22d3ee;
+      padding: 1.25rem 1.5rem;
+      margin: 1.75rem 0;
+      background: linear-gradient(90deg, rgba(34, 211, 238, 0.12) 0%, transparent 100%);
+      border-radius: 0 12px 12px 0;
     }
     
     .markdown-body blockquote p {
@@ -86,22 +125,73 @@
       font-weight: 700;
       font-size: 1.05rem;
       margin: 0;
+      line-height: 1.6;
+    }
+    
+    /* 时间线优化 */
+    .timeline-item {
+      margin-bottom: 3rem;
+    }
+    
+    .timeline-content {
+      margin-left: 1.75rem;
+      border-left-width: 2px;
+      padding-left: 1.5rem;
+    }
+    
+    /* 卡片间距 */
+    .article-card {
+      background: rgba(22, 33, 62, 0.5);
+      border-radius: 12px;
+      padding: 1.75rem;
+      border: 1px solid rgba(15, 52, 96, 0.2);
+      transition: all 0.2s ease;
+      margin-bottom: 1.5rem;
+    }
+    
+    .article-card:hover {
+      border-color: rgba(15, 52, 96, 0.4);
+    }
+    
+    .article-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #eaeaea;
+      margin-bottom: 0;
+    }
+    
+    .article-source {
+      font-size: 0.75rem;
+      color: rgba(234, 234, 234, 0.5);
+      background: rgba(15, 52, 96, 0.4);
+      padding: 0.375rem 0.75rem;
+      border-radius: 9999px;
+      white-space: nowrap;
+      margin-left: 0.75rem;
+    }
+    
+    .tag-item {
+      font-size: 0.75rem;
+      color: rgba(234, 234, 234, 0.5);
+      background: rgba(26, 26, 46, 0.6);
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
     }
   </style>
 </head>
 <body class="bg-primary min-h-screen text-text">
   
-  <header class="py-12 text-center border-b border-highlight/30">
-    <h1 class="text-4xl font-bold mb-2">日知录</h1>
-    <p class="text-text/60">日知其所亡，月无忘其所能</p>
-    <p id="stats" class="mt-4 text-sm text-text/40"></p>
+  <header class="py-10 px-4 text-center border-b border-highlight/30">
+    <h1 class="text-3xl sm:text-4xl font-bold mb-2">日知录</h1>
+    <p class="text-text/60 text-sm sm:text-base">日知其所亡，月无忘其所能</p>
+    <p id="stats" class="mt-4 text-xs sm:text-sm text-text/40"></p>
   </header>
 
-  <main class="max-w-3xl mx-auto px-4 py-12">
+  <main class="max-w-3xl mx-auto px-3 sm:px-4 py-8 sm:py-12">
     <div id="timeline"></div>
   </main>
 
-  <footer class="py-8 text-center text-text/30 text-sm border-t border-highlight/30">
+  <footer class="py-6 sm:py-8 text-center text-text/30 text-xs sm:text-sm border-t border-highlight/30">
     <p>日拱一卒，进一寸有一寸的欢喜</p>
   </footer>
 
@@ -129,12 +219,12 @@
       let html = '';
       Object.keys(grouped).sort().reverse().forEach(date => {
         html += `
-          <div class="mb-12">
-            <div class="flex items-center mb-6">
-              <div class="w-3 h-3 rounded-full bg-highlight mr-4"></div>
-              <time class="text-lg text-text/70">${formatDate(date)}</time>
+          <div class="timeline-item">
+            <div class="flex items-center mb-5">
+              <div class="timeline-marker w-2.5 h-2.5 rounded-full bg-highlight mr-3 sm:mr-4 flex-shrink-0"></div>
+              <time class="timeline-date text-base sm:text-lg text-text/70">${formatDate(date)}</time>
             </div>
-            <div class="ml-7 border-l-2 border-highlight/30 pl-6 space-y-6">
+            <div class="timeline-content border-l-2 border-highlight/30">
               ${grouped[date].map(renderItem).join('')}
             </div>
           </div>
@@ -145,15 +235,15 @@
 
     function renderItem(item) {
       return `
-        <article class="bg-accent/50 rounded-lg p-6 border border-highlight/20 hover:border-highlight/40 transition-colors">
-          <div class="flex items-start justify-between mb-4">
-            <h3 class="text-xl font-bold text-text">${item.title}</h3>
-            ${item.source ? `<span class="text-xs text-text/50 bg-highlight/40 px-3 py-1 rounded-full">${item.source}</span>` : ''}
+        <article class="article-card">
+          <div class="flex items-start justify-between flex-wrap gap-2 mb-4">
+            <h3 class="article-title flex-1">${item.title}</h3>
+            ${item.source ? `<span class="article-source flex-shrink-0">${item.source}</span>` : ''}
           </div>
           <div class="markdown-body">${marked.parse(item.body)}</div>
           ${item.tags ? `
             <div class="flex flex-wrap gap-2 mt-5 pt-4 border-t border-highlight/20">
-              ${item.tags.map(t => `<span class="text-xs text-text/50 bg-primary/60 px-3 py-1 rounded-full">#${t}</span>`).join('')}
+              ${item.tags.map(t => `<span class="tag-item">#${t}</span>`).join('')}
             </div>
           ` : ''}
         </article>
