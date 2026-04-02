@@ -118,8 +118,8 @@
           
           ${item.application ? `
             <div class="mb-4 text-text/70">
-              <p class="mb-1 text-text/40 text-xs uppercase tracking-wide">应用</p>
-              ${item.application}
+              <p class="mb-2 text-text/40 text-xs uppercase tracking-wide">应用</p>
+              ${item.application.split('\n').map(line => line.trim() ? `<p class="mb-2">${line}</p>` : '').join('')}
             </div>
           ` : ''}
           
