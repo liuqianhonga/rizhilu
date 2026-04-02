@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>日知录 · 每日认知精进</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1a1a2e',
+            accent: '#16213e',
+            highlight: '#0f3460',
+            text: '#eaeaea'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap');
+    body { font-family: 'Noto Serif SC', serif; }
+    .timeline-line { 
+      background: linear-gradient(180deg, #0f3460 0%, #16213e 100%);
+    }
+  </style>
+</head>
+<body class="bg-primary min-h-screen text-text">
+  
+  <!-- Header -->
+  <header class="py-12 text-center border-b border-highlight/30">
+    <h1 class="text-4xl font-bold mb-2">日知录</h1>
+    <p class="text-text/60">日知其所亡，月无忘其所能</p>
+    <p id="stats" class="mt-4 text-sm text-text/40"></p>
+  </header>
+
+  <!-- Timeline -->
+  <main class="max-w-3xl mx-auto px-4 py-12">
+    <div id="timeline" class="relative">
+      <!-- Timeline items will be inserted here -->
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="py-8 text-center text-text/30 text-sm border-t border-highlight/30">
+    <p>日拱一卒，进一寸有一寸的欢喜</p>
+  </footer>
+
+  <script>
+    // 加载数据
+    async function loadData() {
+      const response = await fetch('data.json');
+      const data = await response.json();
+      return data;
+    }
+
+    // 渲染时间线
+    function renderTimeline(data) {
+      const container = document.getElementById('timeline');
+      const stats = document.getElementById('stats');
+      
+      // 统计信息
+      const dates = [...new Set(data.map(item => item.date))];
+      stats.textContent = `共 ${data.length} 条认知 · 跨越 ${dates.length} 天`;
+      
+      // 按日期分组
+      const grouped = {};
+      data.forEach(item => {
+        if (!grouped[item.date]) grouped[item.date] = [];
+        grouped[item.date].push(item);
+      });
+
+      let html = '';
+      
+      // 按日期倒序排列
+      Object.keys(grouped).sort().reverse().forEach(date => {
+        const items = grouped[date];
+        const formattedDate = formatDate(date);
+        
+        html += `
+          <div class="mb-12">
+            <!-- Date marker -->
+            <div class="flex items-center mb-6">
+              <div class="w-3 h-3 rounded-full bg-highlight mr-4"></div>
+              <time class="text-lg text-text/70">${formattedDate}</time>
+            </div>
+            
+            <!-- Items for this date -->
+            <div class="ml-7 border-l-2 border-highlight/30 pl-6 space-y-6">
+              ${items.map(item => renderItem(item)).join('')}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    // 渲染单条内容
+    function renderItem(item) {
+      return `
+        <article class="bg-accent/50 rounded-lg p-6 border border-highlight/20 hover:border-highlight/40 transition-colors">
+          <div class="flex items-start justify-between mb-3">
+            <h3 class="text-xl font-semibold text-text">${item.title}</h3>
+            ${item.source ? `<span class="text-xs text-text/40 bg-highlight/30 px-2 py-1 rounded">${item.source}</span>` : ''}
+          </div>
+          
+          <p class="text-text/80 mb-4 text-lg">${item.content}</p>
+          
+          ${item.story ? `
+            <div class="bg-primary/50 rounded p-4 mb-4 text-text/60 text-sm">
+              <p class="mb-1 text-text/40 text-xs uppercase tracking-wide">案例</p>
+              ${item.story}
+            </div>
+          ` : ''}
+          
+          ${item.application ? `
+            <div class="mb-4 text-text/70">
+              <p class="mb-1 text-text/40 text-xs uppercase tracking-wide">应用</p>
+              ${item.application}
+            </div>
+          ` : ''}
+          
+          ${item.insight ? `
+            <div class="border-l-2 border-highlight/50 pl-4 mt-4">
+              <p class="text-highlight font-medium">"${item.insight}"</p>
+            </div>
+          ` : ''}
+          
+          ${item.tags ? `
+            <div class="flex flex-wrap gap-2 mt-4">
+              ${item.tags.map(tag => `<span class="text-xs text-text/40 bg-primary/50 px-2 py-1 rounded">#${tag}</span>`).join('')}
+            </div>
+          ` : ''}
+        </article>
+      `;
+    }
+
+    // 格式化日期
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+      return date.toLocaleDateString('zh-CN', options);
+    }
+
+    // 初始化
+    loadData().then(data => {
+      renderTimeline(data);
+    }).catch(err => {
+      console.error('加载数据失败:', err);
+      document.getElementById('timeline').innerHTML = `
+        <div class="text-center text-text/50 py-12">
+          <p>加载数据失败，请确保 data.json 文件存在</p>
+        </div>
+      `;
+    });
+  </script>
+</body>
+</html>
