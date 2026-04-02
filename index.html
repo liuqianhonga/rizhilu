@@ -25,28 +25,59 @@
     body { font-family: 'Noto Serif SC', serif; }
     
     /* Markdown 渲染样式 */
-    .markdown-content h3 {
-      font-size: 1rem;
-      font-weight: 600;
-      color: #eaeaea;
-      margin-top: 1rem;
-      margin-bottom: 0.5rem;
+    .markdown-body {
+      line-height: 1.8;
+      color: rgba(234, 234, 234, 0.8);
     }
-    .markdown-content p {
-      margin-bottom: 0.5rem;
-      line-height: 1.6;
+    
+    .markdown-body h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #67e8f9;
+      margin-top: 1.25rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid rgba(103, 232, 249, 0.2);
     }
-    .markdown-content ul {
-      list-style-type: disc;
-      padding-left: 1.5rem;
+    
+    .markdown-body h3:first-child {
+      margin-top: 0;
+    }
+    
+    .markdown-body p {
       margin-bottom: 0.75rem;
     }
-    .markdown-content li {
-      margin-bottom: 0.25rem;
+    
+    .markdown-body ul {
+      list-style-type: none;
+      padding-left: 0;
+      margin-bottom: 1rem;
     }
-    .markdown-content strong {
+    
+    .markdown-body li {
+      position: relative;
+      padding-left: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .markdown-body li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
       color: #67e8f9;
-      font-weight: 600;
+      font-weight: bold;
+    }
+    
+    .markdown-body strong {
+      color: #67e8f9;
+      font-weight: 700;
+    }
+    
+    .markdown-body hr {
+      border: none;
+      height: 1px;
+      background: rgba(15, 52, 96, 0.3);
+      margin: 1rem 0;
     }
   </style>
 </head>
@@ -61,9 +92,7 @@
 
   <!-- Timeline -->
   <main class="max-w-3xl mx-auto px-4 py-12">
-    <div id="timeline" class="relative">
-      <!-- Timeline items will be inserted here -->
-    </div>
+    <div id="timeline" class="relative"></div>
   </main>
 
   <!-- Footer -->
@@ -72,29 +101,20 @@
   </footer>
 
   <script>
-    // 配置 marked
-    marked.setOptions({
-      breaks: true,
-      gfm: true
-    });
+    marked.setOptions({ breaks: true, gfm: true });
 
-    // 加载数据
     async function loadData() {
       const response = await fetch('data.json');
-      const data = await response.json();
-      return data;
+      return await response.json();
     }
 
-    // 渲染时间线
     function renderTimeline(data) {
       const container = document.getElementById('timeline');
       const stats = document.getElementById('stats');
       
-      // 统计信息
       const dates = [...new Set(data.map(item => item.date))];
       stats.textContent = `共 ${data.length} 条认知 · 跨越 ${dates.length} 天`;
       
-      // 按日期分组
       const grouped = {};
       data.forEach(item => {
         if (!grouped[item.date]) grouped[item.date] = [];
@@ -102,88 +122,63 @@
       });
 
       let html = '';
-      
-      // 按日期倒序排列
       Object.keys(grouped).sort().reverse().forEach(date => {
         const items = grouped[date];
-        const formattedDate = formatDate(date);
-        
         html += `
           <div class="mb-12">
-            <!-- Date marker -->
             <div class="flex items-center mb-6">
               <div class="w-3 h-3 rounded-full bg-highlight mr-4"></div>
-              <time class="text-lg text-text/70">${formattedDate}</time>
+              <time class="text-lg text-text/70">${formatDate(date)}</time>
             </div>
-            
-            <!-- Items for this date -->
             <div class="ml-7 border-l-2 border-highlight/30 pl-6 space-y-6">
               ${items.map(item => renderItem(item)).join('')}
             </div>
           </div>
         `;
       });
-
       container.innerHTML = html;
     }
 
-    // 渲染单条内容
     function renderItem(item) {
       return `
         <article class="bg-accent/50 rounded-lg p-6 border border-highlight/20 hover:border-highlight/40 transition-colors">
-          <div class="flex items-start justify-between mb-3">
-            <h3 class="text-xl font-semibold text-text">${item.title}</h3>
-            ${item.source ? `<span class="text-xs text-text/40 bg-highlight/30 px-2 py-1 rounded">${item.source}</span>` : ''}
+          <div class="flex items-start justify-between mb-4">
+            <h3 class="text-xl font-bold text-text">${item.title}</h3>
+            ${item.source ? `<span class="text-xs text-text/50 bg-highlight/40 px-3 py-1 rounded-full">${item.source}</span>` : ''}
           </div>
           
-          <p class="text-text/80 mb-4 text-lg">${item.content}</p>
-          
-          ${item.story ? `
-            <div class="bg-primary/50 rounded p-4 mb-4 text-text/60 text-sm">
-              <p class="mb-1 text-text/40 text-xs uppercase tracking-wide">案例</p>
-              <div class="markdown-content">${marked.parse(item.story)}</div>
-            </div>
-          ` : ''}
+          <p class="text-text/80 mb-5 text-lg leading-relaxed">${item.content}</p>
           
           ${item.application ? `
-            <div class="mb-4 text-text/70">
-              <p class="mb-2 text-text/40 text-xs uppercase tracking-wide">应用</p>
-              <div class="markdown-content">${marked.parse(item.application)}</div>
+            <div class="bg-primary/40 rounded-lg p-5 mb-5 border border-highlight/20">
+              <p class="text-xs text-cyan-400 font-semibold mb-3 uppercase tracking-wider">应用</p>
+              <div class="markdown-body">${marked.parse(item.application)}</div>
             </div>
           ` : ''}
           
           ${item.insight ? `
-            <div class="border-l-2 border-cyan-400 pl-4 mt-4 bg-cyan-400/10 py-3 rounded-r">
-              <p class="text-cyan-300 font-semibold">"${item.insight}"</p>
+            <div class="border-l-3 border-cyan-400 pl-5 py-4 bg-gradient-to-r from-cyan-400/15 to-transparent rounded-r-lg">
+              <p class="text-cyan-300 font-bold text-lg">"${item.insight}"</p>
             </div>
           ` : ''}
           
           ${item.tags ? `
-            <div class="flex flex-wrap gap-2 mt-4">
-              ${item.tags.map(tag => `<span class="text-xs text-text/40 bg-primary/50 px-2 py-1 rounded">#${tag}</span>`).join('')}
+            <div class="flex flex-wrap gap-2 mt-5 pt-4 border-t border-highlight/20">
+              ${item.tags.map(tag => `<span class="text-xs text-text/50 bg-primary/60 px-3 py-1 rounded-full">#${tag}</span>`).join('')}
             </div>
           ` : ''}
         </article>
       `;
     }
 
-    // 格式化日期
     function formatDate(dateStr) {
       const date = new Date(dateStr);
-      const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
-      return date.toLocaleDateString('zh-CN', options);
+      return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
     }
 
-    // 初始化
-    loadData().then(data => {
-      renderTimeline(data);
-    }).catch(err => {
-      console.error('加载数据失败:', err);
-      document.getElementById('timeline').innerHTML = `
-        <div class="text-center text-text/50 py-12">
-          <p>加载数据失败，请确保 data.json 文件存在</p>
-        </div>
-      `;
+    loadData().then(renderTimeline).catch(err => {
+      console.error('加载失败:', err);
+      document.getElementById('timeline').innerHTML = `<div class="text-center text-text/50 py-12"><p>加载数据失败</p></div>`;
     });
   </script>
 </body>
