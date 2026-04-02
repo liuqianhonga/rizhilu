@@ -24,24 +24,23 @@
     @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap');
     body { font-family: 'Noto Serif SC', serif; }
     
-    /* Markdown 渲染样式 */
     .markdown-body {
       line-height: 1.8;
-      color: rgba(234, 234, 234, 0.8);
+      color: rgba(234, 234, 234, 0.85);
     }
     
     .markdown-body h3 {
       font-size: 1.1rem;
       font-weight: 700;
       color: #67e8f9;
-      margin-top: 1.25rem;
+      margin-top: 1.5rem;
       margin-bottom: 0.75rem;
       padding-bottom: 0.25rem;
       border-bottom: 1px solid rgba(103, 232, 249, 0.2);
     }
     
     .markdown-body h3:first-child {
-      margin-top: 0;
+      margin-top: 0.5rem;
     }
     
     .markdown-body p {
@@ -49,7 +48,7 @@
     }
     
     .markdown-body ul {
-      list-style-type: none;
+      list-style: none;
       padding-left: 0;
       margin-bottom: 1rem;
     }
@@ -73,29 +72,35 @@
       font-weight: 700;
     }
     
-    .markdown-body hr {
-      border: none;
-      height: 1px;
-      background: rgba(15, 52, 96, 0.3);
-      margin: 1rem 0;
+    /* 引用块样式（金句） */
+    .markdown-body blockquote {
+      border-left: 3px solid #22d3ee;
+      padding: 1rem 1.5rem;
+      margin: 1.5rem 0;
+      background: linear-gradient(90deg, rgba(34, 211, 238, 0.15) 0%, transparent 100%);
+      border-radius: 0 8px 8px 0;
+    }
+    
+    .markdown-body blockquote p {
+      color: #22d3ee;
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin: 0;
     }
   </style>
 </head>
 <body class="bg-primary min-h-screen text-text">
   
-  <!-- Header -->
   <header class="py-12 text-center border-b border-highlight/30">
     <h1 class="text-4xl font-bold mb-2">日知录</h1>
     <p class="text-text/60">日知其所亡，月无忘其所能</p>
     <p id="stats" class="mt-4 text-sm text-text/40"></p>
   </header>
 
-  <!-- Timeline -->
   <main class="max-w-3xl mx-auto px-4 py-12">
-    <div id="timeline" class="relative"></div>
+    <div id="timeline"></div>
   </main>
 
-  <!-- Footer -->
   <footer class="py-8 text-center text-text/30 text-sm border-t border-highlight/30">
     <p>日拱一卒，进一寸有一寸的欢喜</p>
   </footer>
@@ -104,26 +109,25 @@
     marked.setOptions({ breaks: true, gfm: true });
 
     async function loadData() {
-      const response = await fetch('data.json');
-      return await response.json();
+      const res = await fetch('data.json');
+      return res.json();
     }
 
     function renderTimeline(data) {
       const container = document.getElementById('timeline');
       const stats = document.getElementById('stats');
       
-      const dates = [...new Set(data.map(item => item.date))];
+      const dates = [...new Set(data.map(i => i.date))];
       stats.textContent = `共 ${data.length} 条认知 · 跨越 ${dates.length} 天`;
       
       const grouped = {};
-      data.forEach(item => {
-        if (!grouped[item.date]) grouped[item.date] = [];
-        grouped[item.date].push(item);
+      data.forEach(i => {
+        if (!grouped[i.date]) grouped[i.date] = [];
+        grouped[i.date].push(i);
       });
 
       let html = '';
       Object.keys(grouped).sort().reverse().forEach(date => {
-        const items = grouped[date];
         html += `
           <div class="mb-12">
             <div class="flex items-center mb-6">
@@ -131,7 +135,7 @@
               <time class="text-lg text-text/70">${formatDate(date)}</time>
             </div>
             <div class="ml-7 border-l-2 border-highlight/30 pl-6 space-y-6">
-              ${items.map(item => renderItem(item)).join('')}
+              ${grouped[date].map(renderItem).join('')}
             </div>
           </div>
         `;
@@ -146,39 +150,22 @@
             <h3 class="text-xl font-bold text-text">${item.title}</h3>
             ${item.source ? `<span class="text-xs text-text/50 bg-highlight/40 px-3 py-1 rounded-full">${item.source}</span>` : ''}
           </div>
-          
-          <p class="text-text/80 mb-5 text-lg leading-relaxed">${item.content}</p>
-          
-          ${item.application ? `
-            <div class="bg-primary/40 rounded-lg p-5 mb-5 border border-highlight/20">
-              <p class="text-xs text-cyan-400 font-semibold mb-3 uppercase tracking-wider">应用</p>
-              <div class="markdown-body">${marked.parse(item.application)}</div>
-            </div>
-          ` : ''}
-          
-          ${item.insight ? `
-            <div class="border-l-3 border-cyan-400 pl-5 py-4 bg-gradient-to-r from-cyan-400/15 to-transparent rounded-r-lg">
-              <p class="text-cyan-300 font-bold text-lg">"${item.insight}"</p>
-            </div>
-          ` : ''}
-          
+          <div class="markdown-body">${marked.parse(item.body)}</div>
           ${item.tags ? `
             <div class="flex flex-wrap gap-2 mt-5 pt-4 border-t border-highlight/20">
-              ${item.tags.map(tag => `<span class="text-xs text-text/50 bg-primary/60 px-3 py-1 rounded-full">#${tag}</span>`).join('')}
+              ${item.tags.map(t => `<span class="text-xs text-text/50 bg-primary/60 px-3 py-1 rounded-full">#${t}</span>`).join('')}
             </div>
           ` : ''}
         </article>
       `;
     }
 
-    function formatDate(dateStr) {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+    function formatDate(s) {
+      return new Date(s).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
     }
 
-    loadData().then(renderTimeline).catch(err => {
-      console.error('加载失败:', err);
-      document.getElementById('timeline').innerHTML = `<div class="text-center text-text/50 py-12"><p>加载数据失败</p></div>`;
+    loadData().then(renderTimeline).catch(e => {
+      document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>加载失败</p></div>';
     });
   </script>
 </body>
