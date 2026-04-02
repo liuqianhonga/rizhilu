@@ -69,5 +69,6 @@ git push
 ## 文件路径
 - 数据文件：`rizhilu/data.json`
 - 推送状态：`memory/cognitive-push-state.json`
+- 已分析热点：`memory/analyzed-topics.json`
 - 每日记录：`memory/YYYY-MM-DD.md`
-- 添加脚本：`scripts/add-cognitive.ps1`
+- 添加脚本：`scripts/daily-push.ps1`
