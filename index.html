@@ -195,9 +195,9 @@
   </footer>
 
   <!-- 浮动目录 -->
-  <div id="toc-btn" onclick="toggleToc()" style="position:fixed;right:1rem;bottom:1.5rem;z-index:50;background:rgba(34,211,238,0.15);border:1px solid rgba(34,211,238,0.3);backdrop-filter:blur(8px);border-radius:9999px;padding:0.5rem 1rem;cursor:pointer;font-size:0.8rem;color:#22d3ee;user-select:none;display:flex;align-items:center;gap:0.5rem">
-    <span id="top-btn" onclick="event.stopPropagation();window.scrollTo({top:0,behavior:'smooth'})" style="display:none;padding-right:0.5rem;border-right:1px solid rgba(34,211,238,0.3)">↑</span>
-    <span>📖 目录</span>
+  <div style="position:fixed;right:1rem;bottom:1.5rem;z-index:50;display:flex;align-items:center;gap:0.5rem">
+    <div id="top-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="display:none;background:rgba(34,211,238,0.15);border:1px solid rgba(34,211,238,0.3);backdrop-filter:blur(8px);border-radius:9999px;padding:0.5rem 0.875rem;cursor:pointer;font-size:0.8rem;color:#22d3ee;user-select:none">↑</div>
+    <div id="toc-btn" onclick="toggleToc()" style="background:rgba(34,211,238,0.15);border:1px solid rgba(34,211,238,0.3);backdrop-filter:blur(8px);border-radius:9999px;padding:0.5rem 1rem;cursor:pointer;font-size:0.8rem;color:#22d3ee;user-select:none">📖 目录</div>
   </div>
 
   <div id="toc-panel" style="display:none;position:fixed;right:1rem;bottom:4rem;z-index:50;width:min(280px,85vw);max-height:60vh;overflow-y:auto;background:rgba(22,33,62,0.95);border:1px solid rgba(34,211,238,0.2);backdrop-filter:blur(12px);border-radius:12px;padding:0.75rem">
