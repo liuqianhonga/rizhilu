@@ -184,6 +184,11 @@
     <h1 class="text-3xl sm:text-4xl font-bold mb-2">日知录</h1>
     <p class="text-text/60 text-sm sm:text-base">日知其所亡，月无忘其所能</p>
     <p id="stats" class="mt-4 text-xs sm:text-sm text-text/40"></p>
+    <div class="mt-4 flex justify-center">
+      <select id="date-jump" onchange="jumpToDate(this.value)" class="bg-accent border border-highlight/40 text-text/70 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-400/50">
+        <option value="">📅 跳转到某天...</option>
+      </select>
+    </div>
   </header>
 
   <main class="max-w-3xl mx-auto px-3 sm:px-4 py-8 sm:py-12">
@@ -205,9 +210,18 @@
     function renderTimeline(data) {
       const container = document.getElementById('timeline');
       const stats = document.getElementById('stats');
+      const select = document.getElementById('date-jump');
       
-      const dates = [...new Set(data.map(i => i.date))];
+      const dates = [...new Set(data.map(i => i.date))].sort().reverse();
       stats.textContent = `共 ${data.length} 条认知 · 跨越 ${dates.length} 天`;
+      
+      // 填充日期下拉
+      dates.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = formatDate(d);
+        select.appendChild(opt);
+      });
       
       const grouped = {};
       data.forEach(i => {
@@ -216,9 +230,9 @@
       });
 
       let html = '';
-      Object.keys(grouped).sort().reverse().forEach(date => {
+      dates.forEach(date => {
         html += `
-          <div class="mb-10">
+          <div class="mb-10" id="date-${date}">
             <div class="flex items-center gap-2 mb-4">
               <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0"></span>
               <time class="text-sm text-text/50">${formatDate(date)}</time>
@@ -228,6 +242,12 @@
         `;
       });
       container.innerHTML = html;
+    }
+
+    function jumpToDate(date) {
+      if (!date) return;
+      const el = document.getElementById('date-' + date);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function renderItem(item) {
