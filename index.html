@@ -281,9 +281,12 @@
           ` : ''}
           <div class="flex items-center gap-3 mt-4 pt-3 border-t border-highlight/10">
             <span style="font-size:0.7rem;color:rgba(234,234,234,0.3)">分享：</span>
+            ${navigator && navigator.share ? '' : `
             <a href="https://service.weibo.com/share/share.php?url=${encodeURIComponent(location.href+'#item-'+item.id)}&title=${encodeURIComponent(item.title+'\n\n'+item.body.slice(0,80)+'...')}" target="_blank" style="font-size:0.75rem;color:rgba(234,234,234,0.4);text-decoration:none;padding:0.2rem 0.6rem;border:1px solid rgba(234,234,234,0.1);border-radius:9999px" onmouseover="this.style.color='#eaeaea'" onmouseout="this.style.color='rgba(234,234,234,0.4)'">🟠 微博</a>
             <a href="https://connect.qq.com/widget/shareqq/index.html?url=${encodeURIComponent(location.href+'#item-'+item.id)}&title=${encodeURIComponent(item.title)}&summary=${encodeURIComponent(item.body.slice(0,80))}" target="_blank" style="font-size:0.75rem;color:rgba(234,234,234,0.4);text-decoration:none;padding:0.2rem 0.6rem;border:1px solid rgba(234,234,234,0.1);border-radius:9999px" onmouseover="this.style.color='#eaeaea'" onmouseout="this.style.color='rgba(234,234,234,0.4)'">🟦 QQ</a>
             <span onclick="navigator.clipboard.writeText(location.href+'#item-'+item.id).then(()=>alert('链接已复制，可分享到微信'))" style="font-size:0.75rem;color:rgba(234,234,234,0.4);cursor:pointer;padding:0.2rem 0.6rem;border:1px solid rgba(234,234,234,0.1);border-radius:9999px" onmouseover="this.style.color='#eaeaea'" onmouseout="this.style.color='rgba(234,234,234,0.4)'">🟢 微信</span>
+            `}
+            <span onclick="shareItem('${encodeURIComponent(item.title)}','${encodeURIComponent(item.body.slice(0,100))}','${encodeURIComponent(location.href+'#item-'+item.id)}')" style="font-size:0.75rem;color:rgba(234,234,234,0.4);cursor:pointer;padding:0.2rem 0.6rem;border:1px solid rgba(234,234,234,0.1);border-radius:9999px" onmouseover="this.style.color='#eaeaea'" onmouseout="this.style.color='rgba(234,234,234,0.4)'">&#8679; 分享</span>
           </div>
         </article>
       `;
@@ -300,6 +303,15 @@
     window.addEventListener('scroll', () => {
       document.getElementById('top-btn').style.display = window.scrollY > 200 ? 'inline' : 'none';
     });
+
+    function shareItem(title, text, url) {
+      const t = decodeURIComponent(title), tx = decodeURIComponent(text), u = decodeURIComponent(url);
+      if (navigator.share) {
+        navigator.share({ title: t, text: tx, url: u });
+      } else {
+        navigator.clipboard.writeText(u).then(() => alert('链接已复制'));
+      }
+    }
   </script>
 </body>
 </html>
