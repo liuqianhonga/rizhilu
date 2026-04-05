@@ -219,14 +219,12 @@
       let html = '';
       Object.keys(grouped).sort().reverse().forEach(date => {
         html += `
-          <div class="timeline-item">
-            <div class="flex items-center mb-5">
-              <div class="timeline-marker w-2.5 h-2.5 rounded-full bg-highlight mr-3 sm:mr-4 flex-shrink-0"></div>
-              <time class="timeline-date text-base sm:text-lg text-text/70">${formatDate(date)}</time>
+          <div class="mb-10">
+            <div class="flex items-center gap-2 mb-4">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0"></span>
+              <time class="text-sm text-text/50">${formatDate(date)}</time>
             </div>
-            <div class="timeline-content border-l-2 border-highlight/30">
-              ${grouped[date].map(renderItem).join('')}
-            </div>
+            <div>${grouped[date].map(renderItem).join('')}</div>
           </div>
         `;
       });
