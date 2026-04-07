@@ -293,7 +293,7 @@
     }
 
     function formatDate(s) {
-      return new Date(s).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+      return new Date(s).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }).replace('星期', ' 星期');
     }
 
     loadData().then(renderTimeline).catch(e => {
