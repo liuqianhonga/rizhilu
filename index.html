@@ -590,132 +590,55 @@
       }
     }
 
-    // ========== Canvas 绘制分享卡片（完整样式） ==========
-    function wrapTextSimple(ctx, text, x, y, maxWidth, lineHeight) {
-      // 清理文本
-      const cleanText = text.replace(/[#*`>\n]/g, ' ').replace(/\s+/g, ' ').trim();
-      if (!cleanText) return 0;
-      
-      let cy = y;
-      let currentLine = '';
-      
-      for (const char of cleanText) {
-        const testLine = currentLine + char;
-        const metrics = ctx.measureText(testLine);
-        if (metrics.width > maxWidth && currentLine !== '') {
-          ctx.fillText(currentLine, x, cy);
-          currentLine = char;
-          cy += lineHeight;
-        } else {
-          currentLine = testLine;
-        }
-      }
-      if (currentLine) {
-        ctx.fillText(currentLine, x, cy);
-        cy += lineHeight;
-      }
-      return cy - y;
-    }
-
-    function drawRoundedRect(ctx, x, y, width, height, radius) {
-      ctx.beginPath();
-      ctx.moveTo(x + radius, y);
-      ctx.lineTo(x + width - radius, y);
-      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-      ctx.lineTo(x + width, y + height - radius);
-      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-      ctx.lineTo(x + radius, y + height);
-      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-      ctx.lineTo(x, y + radius);
-      ctx.quadraticCurveTo(x, y, x + radius, y);
-      ctx.closePath();
-      ctx.fill();
-    }
-
+    // ========== 使用 html2canvas 捕获网页卡片（干净的实现） ==========
     async function shareAsImage(title, body, date, source) {
       const t = decodeURIComponent(title);
       const b = decodeURIComponent(body);
       const d = decodeURIComponent(date);
       const s = decodeURIComponent(source) || '日知录';
 
+      // 填充卡片内容
+      document.getElementById('share-card-title').textContent = t;
+      document.getElementById('share-card-summary').textContent = b.replace(/[#*`]/g, '');
+      document.getElementById('share-card-date').textContent = formatDate(d);
+      document.getElementById('share-card-source').textContent = s;
+      document.getElementById('share-card-source').style.display = s ? 'inline-block' : 'none';
+
+      const card = document.getElementById('share-card');
       const isMobile = window.innerWidth < 768;
-      const cardWidth = isMobile ? 540 : 1200;
-      const cardHeight = isMobile ? 700 : 900;
-      const scale = 2;
-      const padding = isMobile ? 35 : 70;
-      const contentWidth = cardWidth - padding * 2;
 
-      // 创建 canvas
-      const canvas = document.createElement('canvas');
-      canvas.width = cardWidth * scale;
-      canvas.height = cardHeight * scale;
-      const ctx = canvas.getContext('2d');
-      ctx.scale(scale, scale);
+      // 创建一个完全隔离的容器用于截图（不影响页面）
+      const container = document.createElement('div');
+      container.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;pointer-events:none;z-index:-1;visibility:hidden;';
+      document.body.appendChild(container);
 
-      // 背景渐变（与网页一致）
-      const gradient = ctx.createLinearGradient(0, 0, cardWidth, cardHeight);
-      gradient.addColorStop(0, 'rgba(13, 27, 42, 0.98)');
-      gradient.addColorStop(1, 'rgba(22, 33, 62, 0.98)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, cardWidth, cardHeight);
+      // 克隆卡片到隔离容器
+      const clonedCard = card.cloneNode(true);
+      // 设置移动端宽度
+      if (isMobile) {
+        clonedCard.style.width = '540px';
+      }
+      container.appendChild(clonedCard);
 
-      // 顶部青色装饰线
-      ctx.fillStyle = '#22d3ee';
-      ctx.fillRect(0, 0, cardWidth, 4);
+      // 等待克隆节点渲染
+      await new Promise(r => setTimeout(r, 50));
 
-      // 右下角光晕效果
-      const glowGradient = ctx.createRadialGradient(cardWidth - 100, cardHeight, 0, cardWidth - 100, cardHeight, 400);
-      glowGradient.addColorStop(0, 'rgba(34, 211, 238, 0.08)');
-      glowGradient.addColorStop(1, 'transparent');
-      ctx.fillStyle = glowGradient;
-      ctx.fillRect(0, 0, cardWidth, cardHeight);
-
-      // Header: Logo + 日期
-      ctx.fillStyle = '#22d3ee';
-      ctx.font = `bold ${isMobile ? 18 : 24}px "Noto Serif SC", serif`;
-      ctx.textBaseline = 'top';
-      ctx.fillText('日知录', padding, padding);
-
-      ctx.fillStyle = 'rgba(234, 234, 234, 0.5)';
-      ctx.font = `${isMobile ? 14 : 18}px "Noto Serif SC", serif`;
-      ctx.textAlign = 'right';
-      ctx.fillText(formatDate(d), cardWidth - padding, padding + 2);
-      ctx.textAlign = 'left';
-
-      // 标题
-      const titleY = padding + (isMobile ? 50 : 70);
-      ctx.fillStyle = '#eaeaea';
-      ctx.font = `bold ${isMobile ? 28 : 44}px "Noto Serif SC", serif`;
-      wrapTextSimple(ctx, t.slice(0, 50), padding, titleY, contentWidth, isMobile ? 42 : 58);
-
-      // 正文摘要
-      const bodyY = titleY + (isMobile ? 60 : 90);
-      ctx.fillStyle = 'rgba(234, 234, 234, 0.7)';
-      ctx.font = `${isMobile ? 16 : 22}px "Noto Serif SC", serif`;
-      wrapTextSimple(ctx, b.replace(/[#*`]/g, '').slice(0, 200), padding, bodyY, contentWidth, isMobile ? 32 : 44);
-
-      // 底部 Footer
-      const footerY = cardHeight - (isMobile ? 90 : 120);
-
-      // 来源标签背景
-      ctx.fillStyle = 'rgba(34, 211, 238, 0.12)';
-      ctx.font = `${isMobile ? 13 : 16}px "Noto Serif SC", serif`;
-      const sourceText = s.length > 20 ? s.slice(0, 20) + '…' : s;
-      const sourceWidth = ctx.measureText(sourceText).width + 40;
-      drawRoundedRect(ctx, padding, footerY + 10, sourceWidth, 36, 18);
-
-      // 来源文字
-      ctx.fillStyle = '#22d3ee';
-      ctx.fillText(sourceText, padding + 20, footerY + 20);
-
-      // 品牌文字
-      ctx.fillStyle = 'rgba(234, 234, 234, 0.3)';
-      ctx.font = `${isMobile ? 12 : 14}px "Noto Serif SC", serif`;
-      ctx.textAlign = 'right';
-      ctx.fillText('日知录 · 每日认知精进', cardWidth - padding, footerY + 20);
-      ctx.textAlign = 'left';
-
-      return canvas;
+      try {
+        const canvas = await html2canvas(clonedCard, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#0d1b2a',
+          logging: false,
+          width: isMobile ? 540 : 1200,
+          height: clonedCard.offsetHeight,
+          windowWidth: clonedCard.scrollWidth,
+          windowHeight: clonedCard.scrollHeight
+        });
+        return canvas;
+      } finally {
+        // 清理：移除隔离容器
+        document.body.removeChild(container);
+      }
     }
 
     async function shareArticle(title, body, date, source) {
