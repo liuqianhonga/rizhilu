@@ -590,30 +590,47 @@
       }
     }
 
-    // ========== Canvas 绘制分享卡片 ==========
-    function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-      const lines = text.split('\n');
+    // ========== Canvas 绘制分享卡片（完整样式） ==========
+    function wrapTextMultiLine(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
+      // 清理文本：移除markdown符号，保留换行用于分段
+      const cleanText = text.replace(/[#*`>]/g, '').trim();
+      const paragraphs = cleanText.split('\n');
       let cy = y;
-      for (const line of lines) {
+      let linesUsed = 0;
+      
+      for (const para of paragraphs) {
+        if (linesUsed >= maxLines) break;
+        const words = para.split('');
         let currentLine = '';
-        for (const char of line) {
+        
+        for (const char of words) {
           const testLine = currentLine + char;
           const metrics = ctx.measureText(testLine);
           if (metrics.width > maxWidth && currentLine !== '') {
             ctx.fillText(currentLine, x, cy);
             currentLine = char;
             cy += lineHeight;
+            linesUsed++;
+            if (linesUsed >= maxLines) break;
           } else {
             currentLine = testLine;
           }
         }
-        ctx.fillText(currentLine, x, cy);
-        cy += lineHeight;
+        if (currentLine && linesUsed < maxLines) {
+          ctx.fillText(currentLine, x, cy);
+          cy += lineHeight;
+          linesUsed++;
+        }
+        // 段落之间空一行
+        if (linesUsed < maxLines && para !== paragraphs[paragraphs.length - 1]) {
+          cy += lineHeight * 0.5;
+          linesUsed++;
+        }
       }
-      return cy - y; // 返回实际占用高度
+      return cy - y;
     }
 
-    function roundRect(ctx, x, y, width, height, radius) {
+    function drawRoundedRect(ctx, x, y, width, height, radius) {
       ctx.beginPath();
       ctx.moveTo(x + radius, y);
       ctx.lineTo(x + width - radius, y);
@@ -630,17 +647,29 @@
 
     async function shareAsImage(title, body, date, source) {
       const t = decodeURIComponent(title);
-      const b = decodeURIComponent(body).replace(/[#*`>\n]/g, ' ').replace(/\s+/g, ' ').trim();
+      const b = decodeURIComponent(body);
       const d = decodeURIComponent(date);
       const s = decodeURIComponent(source) || '日知录';
 
       // 检测移动端
       const isMobile = window.innerWidth < 768;
-      // 卡片尺寸：移动端 540px 宽，PC 端 1080px 宽
-      const cardWidth = isMobile ? 540 : 1080;
-      const scale = isMobile ? 1 : 2;
-      // 移动端用更长的高度比例，确保内容完整显示
-      const cardHeight = isMobile ? 400 : 630;
+      // 卡片尺寸：保持和网页一致的比例
+      const cardWidth = isMobile ? 540 : 1200;
+      const scale = isMobile ? 2 : 2; // 都用2倍清晰度
+      
+      // 根据内容计算高度
+      const padding = isMobile ? 35 : 70;
+      const headerHeight = isMobile ? 50 : 70;
+      const titleLineHeight = isMobile ? 40 : 55;
+      const bodyLineHeight = isMobile ? 28 : 36;
+      const footerHeight = isMobile ? 70 : 100;
+      const contentWidth = cardWidth - padding * 2;
+      
+      // 预估内容高度
+      const titleHeight = Math.ceil(t.length / (contentWidth / (isMobile ? 26 : 42))) * titleLineHeight;
+      const bodyLines = Math.ceil(b.replace(/[#*`>]/g, '').length / (contentWidth / (isMobile ? 15 : 20)));
+      const bodyHeight = Math.min(bodyLines, isMobile ? 8 : 10) * bodyLineHeight;
+      const cardHeight = padding + headerHeight + titleHeight + bodyHeight + footerHeight;
 
       // 创建 canvas
       const canvas = document.createElement('canvas');
@@ -649,10 +678,10 @@
       const ctx = canvas.getContext('2d');
       ctx.scale(scale, scale);
 
-      // 绘制背景渐变
+      // 背景渐变（与网页一致）
       const gradient = ctx.createLinearGradient(0, 0, cardWidth, cardHeight);
-      gradient.addColorStop(0, '#0d1b2a');
-      gradient.addColorStop(1, '#16213e');
+      gradient.addColorStop(0, 'rgba(13, 27, 42, 0.98)');
+      gradient.addColorStop(1, 'rgba(22, 33, 62, 0.98)');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, cardWidth, cardHeight);
 
@@ -660,63 +689,56 @@
       ctx.fillStyle = '#22d3ee';
       ctx.fillRect(0, 0, cardWidth, 4);
 
-      // 右下角光晕
-      const glowGradient = ctx.createRadialGradient(cardWidth - 80, cardHeight, 0, cardWidth - 80, cardHeight, 300);
-      glowGradient.addColorStop(0, 'rgba(34, 211, 238, 0.1)');
+      // 右下角光晕效果
+      const glowGradient = ctx.createRadialGradient(cardWidth - 100, cardHeight, 0, cardWidth - 100, cardHeight, 400);
+      glowGradient.addColorStop(0, 'rgba(34, 211, 238, 0.08)');
       glowGradient.addColorStop(1, 'transparent');
       ctx.fillStyle = glowGradient;
       ctx.fillRect(0, 0, cardWidth, cardHeight);
 
-      // 内边距
-      const padding = isMobile ? 40 : 60;
-      const contentWidth = cardWidth - padding * 2;
-
-      // Logo
+      // Header: Logo + 日期
       ctx.fillStyle = '#22d3ee';
-      ctx.font = `bold ${isMobile ? 18 : 24}px "Noto Serif SC", "Songti SC", serif`;
+      ctx.font = `bold ${isMobile ? 18 : 24}px "Noto Serif SC", serif`;
       ctx.textBaseline = 'top';
       ctx.fillText('日知录', padding, padding);
 
-      // 日期
       ctx.fillStyle = 'rgba(234, 234, 234, 0.5)';
-      ctx.font = `${isMobile ? 14 : 18}px "Noto Serif SC", "Songti SC", serif`;
+      ctx.font = `${isMobile ? 14 : 18}px "Noto Serif SC", serif`;
       ctx.textAlign = 'right';
       ctx.fillText(formatDate(d), cardWidth - padding, padding + 2);
       ctx.textAlign = 'left';
 
       // 标题
-      const titleY = padding + 50;
+      const titleY = padding + headerHeight;
       ctx.fillStyle = '#eaeaea';
-      ctx.font = `bold ${isMobile ? 26 : 42}px "Noto Serif SC", "Songti SC", serif`;
-      const titleHeight = wrapText(ctx, t.slice(0, 30), padding, titleY, contentWidth, isMobile ? 36 : 55);
+      ctx.font = `bold ${isMobile ? 26 : 42}px "Noto Serif SC", serif`;
+      const actualTitleHeight = wrapTextMultiLine(ctx, t, padding, titleY, contentWidth, titleLineHeight, isMobile ? 4 : 3);
 
-      // 摘要（限制行数）
-      const summaryY = titleY + titleHeight + (isMobile ? 16 : 24);
+      // 正文摘要
+      const bodyY = titleY + actualTitleHeight + (isMobile ? 20 : 30);
       ctx.fillStyle = 'rgba(234, 234, 234, 0.7)';
-      ctx.font = `${isMobile ? 15 : 20}px "Noto Serif SC", "Songti SC", serif`;
-      // 移动端限制为80字符，PC限制120字符
-      const summaryText = isMobile ? b.slice(0, 80) : b.slice(0, 120);
-      const summaryHeight = wrapText(ctx, summaryText, padding, summaryY, contentWidth, isMobile ? 26 : 38);
+      ctx.font = `${isMobile ? 15 : 20}px "Noto Serif SC", serif`;
+      wrapTextMultiLine(ctx, b, padding, bodyY, contentWidth, bodyLineHeight, isMobile ? 8 : 10);
 
-      // 底部区域
-      const footerY = cardHeight - padding - 36;
+      // 底部 Footer
+      const footerY = cardHeight - footerHeight;
 
       // 来源标签背景
       ctx.fillStyle = 'rgba(34, 211, 238, 0.12)';
-      ctx.font = `${isMobile ? 13 : 16}px "Noto Serif SC", "Songti SC", serif`;
-      const sourceText = s.length > 15 ? s.slice(0, 15) + '...' : s;
+      ctx.font = `${isMobile ? 13 : 16}px "Noto Serif SC", serif`;
+      const sourceText = s.length > 20 ? s.slice(0, 20) + '…' : s;
       const sourceWidth = ctx.measureText(sourceText).width + 40;
-      roundRect(ctx, padding, footerY, sourceWidth, 36, 18);
+      drawRoundedRect(ctx, padding, footerY + 10, sourceWidth, 36, 18);
 
       // 来源文字
       ctx.fillStyle = '#22d3ee';
-      ctx.fillText(sourceText, padding + 20, footerY + 10);
+      ctx.fillText(sourceText, padding + 20, footerY + 20);
 
       // 品牌文字
       ctx.fillStyle = 'rgba(234, 234, 234, 0.3)';
-      ctx.font = `${isMobile ? 12 : 14}px "Noto Serif SC", "Songti SC", serif`;
+      ctx.font = `${isMobile ? 12 : 14}px "Noto Serif SC", serif`;
       ctx.textAlign = 'right';
-      ctx.fillText('日知录 · 每日认知精进', cardWidth - padding, footerY + 10);
+      ctx.fillText('日知录 · 每日认知精进', cardWidth - padding, footerY + 20);
       ctx.textAlign = 'left';
 
       return canvas;
