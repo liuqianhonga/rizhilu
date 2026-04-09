@@ -422,7 +422,7 @@
   </footer>
 
   <!-- 分享卡片模板（隐藏） -->
-  <div id="share-card" style="position:fixed;left:-9999px;top:-9999px;visibility:hidden">
+  <div id="share-card" style="display:none;position:absolute;pointer-events:none;opacity:0">
     <div class="share-card-header">
       <span class="share-card-logo">日知录</span>
       <span class="share-card-date" id="share-card-date"></span>
@@ -590,73 +590,133 @@
       }
     }
 
+    // ========== Canvas 绘制分享卡片 ==========
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+      const lines = text.split('\n');
+      let cy = y;
+      for (const line of lines) {
+        let currentLine = '';
+        for (const char of line) {
+          const testLine = currentLine + char;
+          const metrics = ctx.measureText(testLine);
+          if (metrics.width > maxWidth && currentLine !== '') {
+            ctx.fillText(currentLine, x, cy);
+            currentLine = char;
+            cy += lineHeight;
+          } else {
+            currentLine = testLine;
+          }
+        }
+        ctx.fillText(currentLine, x, cy);
+        cy += lineHeight;
+      }
+      return cy - y; // 返回实际占用高度
+    }
+
+    function roundRect(ctx, x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      ctx.fill();
+    }
+
     async function shareAsImage(title, body, date, source) {
       const t = decodeURIComponent(title);
-      const b = decodeURIComponent(body);
+      const b = decodeURIComponent(body).replace(/[#*`>\n]/g, ' ').replace(/\s+/g, ' ').trim();
       const d = decodeURIComponent(date);
-      const s = decodeURIComponent(source);
+      const s = decodeURIComponent(source) || '日知录';
 
       // 检测移动端
       const isMobile = window.innerWidth < 768;
+      // 卡片尺寸：移动端 540px 宽，PC 端 1080px 宽
+      const cardWidth = isMobile ? 540 : 1080;
+      const scale = isMobile ? 1 : 2;
+      const cardHeight = Math.floor(cardWidth * 0.525); // 630/1200 = 0.525
 
-      // 填充卡片内容
-      document.getElementById('share-card-title').textContent = t;
-      document.getElementById('share-card-summary').textContent = b.replace(/[#*`]/g, '').slice(0, 150);
-      document.getElementById('share-card-date').textContent = formatDate(d);
-      document.getElementById('share-card-source').textContent = s || '日知录';
-      document.getElementById('share-card-source').style.display = s ? 'inline-block' : 'none';
+      // 创建 canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = cardWidth * scale;
+      canvas.height = cardHeight * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(scale, scale);
 
-      // 隐藏菜单，确保不影响截图
-      closeShareMenu();
+      // 绘制背景渐变
+      const gradient = ctx.createLinearGradient(0, 0, cardWidth, cardHeight);
+      gradient.addColorStop(0, '#0d1b2a');
+      gradient.addColorStop(1, '#16213e');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, cardWidth, cardHeight);
 
-      // 使用固定定位的卡片，无需滚动页面
-      const card = document.getElementById('share-card');
-      card.style.visibility = 'hidden';
-      card.style.position = 'fixed';
-      card.style.left = '0';
-      card.style.top = '0';
-      card.style.zIndex = '-1';
+      // 顶部青色装饰线
+      ctx.fillStyle = '#22d3ee';
+      ctx.fillRect(0, 0, cardWidth, 4);
 
-      // 强制重排
-      card.offsetHeight;
+      // 右下角光晕
+      const glowGradient = ctx.createRadialGradient(cardWidth - 80, cardHeight, 0, cardWidth - 80, cardHeight, 300);
+      glowGradient.addColorStop(0, 'rgba(34, 211, 238, 0.1)');
+      glowGradient.addColorStop(1, 'transparent');
+      ctx.fillStyle = glowGradient;
+      ctx.fillRect(0, 0, cardWidth, cardHeight);
 
-      card.style.visibility = 'visible';
+      // 内边距
+      const padding = isMobile ? 40 : 60;
+      const contentWidth = cardWidth - padding * 2;
 
-      // 等待 DOM 更新
-      await new Promise(r => setTimeout(r, 150));
+      // Logo
+      ctx.fillStyle = '#22d3ee';
+      ctx.font = `bold ${isMobile ? 18 : 24}px "Noto Serif SC", "Songti SC", serif`;
+      ctx.textBaseline = 'top';
+      ctx.fillText('日知录', padding, padding);
 
-      try {
-        const isMobileDevice = window.innerWidth < 768;
-        const scale = isMobileDevice ? 1 : 2;
-        const width = isMobileDevice ? Math.min(window.innerWidth * 0.9, 540) : 540;
+      // 日期
+      ctx.fillStyle = 'rgba(234, 234, 234, 0.5)';
+      ctx.font = `${isMobile ? 14 : 18}px "Noto Serif SC", "Songti SC", serif`;
+      ctx.textAlign = 'right';
+      ctx.fillText(formatDate(d), cardWidth - padding, padding + 2);
+      ctx.textAlign = 'left';
 
-        const canvas = await html2canvas(card, {
-          scale: scale,
-          width: width,
-          useCORS: true,
-          backgroundColor: '#0d1b2a',
-          logging: false,
-          onclone: (clonedDoc) => {
-            const clonedCard = clonedDoc.getElementById('share-card');
-            if (clonedCard) {
-              clonedCard.style.visibility = 'visible';
-              clonedCard.style.position = 'static';
-              clonedCard.style.left = 'auto';
-              clonedCard.style.top = 'auto';
-              clonedCard.style.zIndex = 'auto';
-            }
-          }
-        });
+      // 标题
+      const titleY = padding + 50;
+      ctx.fillStyle = '#eaeaea';
+      ctx.font = `bold ${isMobile ? 28 : 42}px "Noto Serif SC", "Songti SC", serif`;
+      const titleHeight = wrapText(ctx, t.slice(0, 50), padding, titleY, contentWidth, isMobile ? 38 : 55);
 
-        // 恢复卡片隐藏
-        resetCardPosition();
+      // 摘要（最多3行）
+      const summaryY = titleY + titleHeight + (isMobile ? 16 : 24);
+      ctx.fillStyle = 'rgba(234, 234, 234, 0.7)';
+      ctx.font = `${isMobile ? 16 : 20}px "Noto Serif SC", "Songti SC", serif`;
+      const summaryHeight = wrapText(ctx, b.slice(0, 150), padding, summaryY, contentWidth, isMobile ? 28 : 38);
 
-        return canvas;
-      } catch (e) {
-        console.error(e);
-        resetCardPosition();
-        throw e;
-      }
+      // 底部区域
+      const footerY = cardHeight - padding - 36;
+
+      // 来源标签背景
+      ctx.fillStyle = 'rgba(34, 211, 238, 0.12)';
+      ctx.font = `${isMobile ? 13 : 16}px "Noto Serif SC", "Songti SC", serif`;
+      const sourceText = s.length > 15 ? s.slice(0, 15) + '...' : s;
+      const sourceWidth = ctx.measureText(sourceText).width + 40;
+      roundRect(ctx, padding, footerY, sourceWidth, 36, 18);
+
+      // 来源文字
+      ctx.fillStyle = '#22d3ee';
+      ctx.fillText(sourceText, padding + 20, footerY + 10);
+
+      // 品牌文字
+      ctx.fillStyle = 'rgba(234, 234, 234, 0.3)';
+      ctx.font = `${isMobile ? 12 : 14}px "Noto Serif SC", "Songti SC", serif`;
+      ctx.textAlign = 'right';
+      ctx.fillText('日知录 · 每日认知精进', cardWidth - padding, footerY + 10);
+      ctx.textAlign = 'left';
+
+      return canvas;
     }
 
     async function shareArticle(title, body, date, source) {
@@ -674,11 +734,19 @@
         const fileName = `日知录_${d}_${t.slice(0, 20)}.png`;
 
         // 3. 系统分享（移动端）
-        if (navigator.share && navigator.canShare) {
-          const file = new File([blob], fileName, { type: 'image/png' });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: t, text: '来自日知录的每日认知精进' });
-            return;
+        if (navigator.share) {
+          try {
+            const file = new File([blob], fileName, { type: 'image/png' });
+            const shareData = { title: t, text: '来自日知录的每日认知精进' };
+            // 检测是否支持文件分享
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              shareData.files = [file];
+            }
+            await navigator.share(shareData);
+            return; // 分享成功
+          } catch (e) {
+            if (e.name === 'AbortError') return; // 用户取消，直接返回
+            // 其他错误，继续降级到下载
           }
         }
 
@@ -699,11 +767,8 @@
 
     function resetCardPosition() {
       const card = document.getElementById('share-card');
+      card.style.display = 'none';
       card.style.visibility = 'hidden';
-      card.style.position = 'fixed';
-      card.style.left = '-9999px';
-      card.style.top = '-9999px';
-      card.style.zIndex = '';
     }
 
     function closeShareMenu() {
