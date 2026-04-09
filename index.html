@@ -591,41 +591,28 @@
     }
 
     // ========== Canvas 绘制分享卡片（完整样式） ==========
-    function wrapTextMultiLine(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
-      // 清理文本：移除markdown符号，保留换行用于分段
-      const cleanText = text.replace(/[#*`>]/g, '').trim();
-      const paragraphs = cleanText.split('\n');
-      let cy = y;
-      let linesUsed = 0;
+    function wrapTextSimple(ctx, text, x, y, maxWidth, lineHeight) {
+      // 清理文本
+      const cleanText = text.replace(/[#*`>\n]/g, ' ').replace(/\s+/g, ' ').trim();
+      if (!cleanText) return 0;
       
-      for (const para of paragraphs) {
-        if (linesUsed >= maxLines) break;
-        const words = para.split('');
-        let currentLine = '';
-        
-        for (const char of words) {
-          const testLine = currentLine + char;
-          const metrics = ctx.measureText(testLine);
-          if (metrics.width > maxWidth && currentLine !== '') {
-            ctx.fillText(currentLine, x, cy);
-            currentLine = char;
-            cy += lineHeight;
-            linesUsed++;
-            if (linesUsed >= maxLines) break;
-          } else {
-            currentLine = testLine;
-          }
-        }
-        if (currentLine && linesUsed < maxLines) {
+      let cy = y;
+      let currentLine = '';
+      
+      for (const char of cleanText) {
+        const testLine = currentLine + char;
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && currentLine !== '') {
           ctx.fillText(currentLine, x, cy);
+          currentLine = char;
           cy += lineHeight;
-          linesUsed++;
+        } else {
+          currentLine = testLine;
         }
-        // 段落之间空一行
-        if (linesUsed < maxLines && para !== paragraphs[paragraphs.length - 1]) {
-          cy += lineHeight * 0.5;
-          linesUsed++;
-        }
+      }
+      if (currentLine) {
+        ctx.fillText(currentLine, x, cy);
+        cy += lineHeight;
       }
       return cy - y;
     }
@@ -651,25 +638,12 @@
       const d = decodeURIComponent(date);
       const s = decodeURIComponent(source) || '日知录';
 
-      // 检测移动端
       const isMobile = window.innerWidth < 768;
-      // 卡片尺寸：保持和网页一致的比例
       const cardWidth = isMobile ? 540 : 1200;
-      const scale = isMobile ? 2 : 2; // 都用2倍清晰度
-      
-      // 根据内容计算高度
+      const cardHeight = isMobile ? 700 : 900;
+      const scale = 2;
       const padding = isMobile ? 35 : 70;
-      const headerHeight = isMobile ? 50 : 70;
-      const titleLineHeight = isMobile ? 40 : 55;
-      const bodyLineHeight = isMobile ? 28 : 36;
-      const footerHeight = isMobile ? 70 : 100;
       const contentWidth = cardWidth - padding * 2;
-      
-      // 预估内容高度
-      const titleHeight = Math.ceil(t.length / (contentWidth / (isMobile ? 26 : 42))) * titleLineHeight;
-      const bodyLines = Math.ceil(b.replace(/[#*`>]/g, '').length / (contentWidth / (isMobile ? 15 : 20)));
-      const bodyHeight = Math.min(bodyLines, isMobile ? 8 : 10) * bodyLineHeight;
-      const cardHeight = padding + headerHeight + titleHeight + bodyHeight + footerHeight;
 
       // 创建 canvas
       const canvas = document.createElement('canvas');
@@ -709,19 +683,19 @@
       ctx.textAlign = 'left';
 
       // 标题
-      const titleY = padding + headerHeight;
+      const titleY = padding + (isMobile ? 50 : 70);
       ctx.fillStyle = '#eaeaea';
-      ctx.font = `bold ${isMobile ? 26 : 42}px "Noto Serif SC", serif`;
-      const actualTitleHeight = wrapTextMultiLine(ctx, t, padding, titleY, contentWidth, titleLineHeight, isMobile ? 4 : 3);
+      ctx.font = `bold ${isMobile ? 28 : 44}px "Noto Serif SC", serif`;
+      wrapTextSimple(ctx, t.slice(0, 50), padding, titleY, contentWidth, isMobile ? 42 : 58);
 
       // 正文摘要
-      const bodyY = titleY + actualTitleHeight + (isMobile ? 20 : 30);
+      const bodyY = titleY + (isMobile ? 60 : 90);
       ctx.fillStyle = 'rgba(234, 234, 234, 0.7)';
-      ctx.font = `${isMobile ? 15 : 20}px "Noto Serif SC", serif`;
-      wrapTextMultiLine(ctx, b, padding, bodyY, contentWidth, bodyLineHeight, isMobile ? 8 : 10);
+      ctx.font = `${isMobile ? 16 : 22}px "Noto Serif SC", serif`;
+      wrapTextSimple(ctx, b.replace(/[#*`]/g, '').slice(0, 200), padding, bodyY, contentWidth, isMobile ? 32 : 44);
 
       // 底部 Footer
-      const footerY = cardHeight - footerHeight;
+      const footerY = cardHeight - (isMobile ? 90 : 120);
 
       // 来源标签背景
       ctx.fillStyle = 'rgba(34, 211, 238, 0.12)';
