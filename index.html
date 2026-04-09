@@ -413,20 +413,32 @@
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
       const fileName = `日知录_${d}_${t.slice(0, 20)}.png`;
 
-      // 直接尝试系统分享
+      // 检测 iOS（iOS 上的 Web Share API 不稳定，优先尝试文本分享）
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+      // 尝试系统分享
       if (navigator.share) {
-        const file = new File([blob], fileName, { type: 'image/png' });
-        const shareData = { title: t, text: '来自日知录的每日认知精进' };
-        // 如果支持文件分享，加上文件
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          shareData.files = [file];
+        // iOS 优先尝试不带文件的纯文本分享（更稳定）
+        if (isIOS) {
+          try {
+            await navigator.share({ title: t, text: '来自日知录的每日认知精进' });
+            return;
+          } catch (e) {
+            if (e.name === 'AbortError') return;
+            // 文本分享失败，继续尝试带文件
+          }
         }
-        try {
-          await navigator.share(shareData);
-          return;
-        } catch (e) {
-          alert('分享失败: ' + e.name + ' - ' + e.message);
-          if (e.name === 'AbortError') return;
+
+        // 尝试带文件的分享
+        const file = new File([blob], fileName, { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ title: t, text: '来自日知录的每日认知精进', files: [file] });
+            return;
+          } catch (e) {
+            if (e.name === 'AbortError') return;
+            // 分享出错，降级到下载
+          }
         }
       }
 
