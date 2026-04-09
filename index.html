@@ -607,21 +607,26 @@
       const card = document.getElementById('share-card');
       const isMobile = window.innerWidth < 768;
 
-      // 创建一个完全隔离的容器用于截图（不影响页面）
-      const container = document.createElement('div');
-      container.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;pointer-events:none;z-index:-1;visibility:hidden;';
-      document.body.appendChild(container);
-
-      // 克隆卡片到隔离容器
+      // 克隆卡片
       const clonedCard = card.cloneNode(true);
-      // 设置移动端宽度
+      // 确保克隆的卡片可见（移除原 display:none）
+      clonedCard.style.display = '';
+      clonedCard.style.visibility = '';
+      clonedCard.style.opacity = '';
+      clonedCard.style.position = '';
+      clonedCard.style.pointerEvents = '';
       if (isMobile) {
-        clonedCard.style.width = '540px';
+        clonedCard.style.width = 'min(540px, 90vw)';
       }
+
+      // 创建一个完全隔离的容器用于截图
+      const container = document.createElement('div');
+      container.style.cssText = 'position:fixed;left:0;top:0;width:1200px;height:630px;opacity:0;pointer-events:none;z-index:-1;overflow:hidden;';
+      document.body.appendChild(container);
       container.appendChild(clonedCard);
 
-      // 等待克隆节点渲染
-      await new Promise(r => setTimeout(r, 50));
+      // 等待渲染
+      await new Promise(r => setTimeout(r, 100));
 
       try {
         const canvas = await html2canvas(clonedCard, {
@@ -629,14 +634,11 @@
           useCORS: true,
           backgroundColor: '#0d1b2a',
           logging: false,
-          width: isMobile ? 540 : 1200,
-          height: clonedCard.offsetHeight,
-          windowWidth: clonedCard.scrollWidth,
-          windowHeight: clonedCard.scrollHeight
+          width: clonedCard.scrollWidth,
+          height: clonedCard.scrollHeight
         });
         return canvas;
       } finally {
-        // 清理：移除隔离容器
         document.body.removeChild(container);
       }
     }
