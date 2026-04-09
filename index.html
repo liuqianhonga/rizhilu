@@ -181,7 +181,8 @@
     /* 分享卡片样式 */
     #share-card {
       width: 1200px;
-      height: 630px;
+      min-height: 630px;
+      height: auto;
       background: linear-gradient(135deg, rgba(13, 27, 42, 0.98) 0%, rgba(22, 33, 62, 0.98) 100%);
       padding: 60px 70px;
       box-sizing: border-box;
@@ -189,8 +190,41 @@
       flex-direction: column;
       justify-content: space-between;
       position: relative;
-      overflow: hidden;
+      overflow: visible;
       font-family: 'Noto Serif SC', serif;
+    }
+
+    /* 移动端卡片适配 */
+    @media (max-width: 768px) {
+      #share-card {
+        width: 540px;
+        min-height: 300px;
+        padding: 30px 35px;
+      }
+      .share-card-title {
+        font-size: 28px !important;
+        margin-bottom: 16px;
+      }
+      .share-card-summary {
+        font-size: 16px !important;
+        margin-bottom: 20px;
+      }
+      .share-card-logo {
+        font-size: 16px !important;
+      }
+      .share-card-date {
+        font-size: 14px !important;
+      }
+      .share-card-source {
+        font-size: 14px !important;
+        padding: 6px 14px !important;
+      }
+      .share-card-brand {
+        font-size: 12px !important;
+      }
+      .share-card-footer {
+        padding-top: 16px !important;
+      }
     }
 
     #share-card::before {
@@ -290,7 +324,16 @@
       justify-content: center;
       z-index: 9999;
       animation: fadeIn 0.2s ease;
+      touch-action: manipulation;
     }
+
+    @media (max-width: 768px) {
+      .share-menu-content {
+        width: 90vw;
+        max-width: 90vw;
+      }
+    }
+
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
@@ -376,7 +419,7 @@
   </footer>
 
   <!-- 分享卡片模板（隐藏） -->
-  <div id="share-card" style="position:fixed;left:-9999px;top:-9999px">
+  <div id="share-card" style="position:fixed;left:-9999px;top:-9999px;visibility:hidden">
     <div class="share-card-header">
       <span class="share-card-logo">日知录</span>
       <span class="share-card-date" id="share-card-date"></span>
@@ -551,6 +594,9 @@
       const d = decodeURIComponent(date);
       const s = decodeURIComponent(source);
 
+      // 检测移动端
+      const isMobile = window.innerWidth < 768;
+
       // 填充卡片内容
       document.getElementById('share-card-title').textContent = t;
       document.getElementById('share-card-summary').textContent = b.replace(/[#*`]/g, '').slice(0, 150);
@@ -558,17 +604,40 @@
       document.getElementById('share-card-source').textContent = s || '日知录';
       document.getElementById('share-card-source').style.display = s ? 'inline-block' : 'none';
 
-      // 显示卡片
+      // 隐藏菜单，确保不影响截图
+      closeShareMenu();
+
+      // 滚动到顶部并显示卡片（使用 visibility 方式而非 position）
+      window.scrollTo(0, 0);
       const card = document.getElementById('share-card');
+      card.style.visibility = 'hidden';
+      card.style.position = 'fixed';
       card.style.left = '0';
       card.style.top = '0';
+      card.style.zIndex = '-1';
+      card.style.visibility = 'visible';
+
+      // 等待 DOM 更新
+      await new Promise(r => setTimeout(r, 100));
 
       try {
         const canvas = await html2canvas(card, {
-          scale: 2,
+          scale: isMobile ? 1.5 : 2,
           useCORS: true,
-          backgroundColor: null,
-          logging: false
+          allowTaint: true,
+          width: card.offsetWidth,
+          height: card.offsetHeight,
+          backgroundColor: '#0d1b2a',
+          logging: false,
+          onclone: (clonedDoc) => {
+            const clonedCard = clonedDoc.getElementById('share-card');
+            if (clonedCard) {
+              clonedCard.style.visibility = 'visible';
+              clonedCard.style.position = 'fixed';
+              clonedCard.style.left = '0';
+              clonedCard.style.top = '0';
+            }
+          }
         });
 
         // 保存 canvas 到全局变量，供分享选项使用
@@ -584,16 +653,22 @@
       } catch (e) {
         alert('生成图片失败，请重试');
         console.error(e);
-        card.style.left = '-9999px';
-        card.style.top = '-9999px';
+        resetCardPosition();
       }
+    }
+
+    function resetCardPosition() {
+      const card = document.getElementById('share-card');
+      card.style.visibility = 'hidden';
+      card.style.position = 'fixed';
+      card.style.left = '-9999px';
+      card.style.top = '-9999px';
+      card.style.zIndex = '';
     }
 
     function closeShareMenu() {
       document.getElementById('share-menu').style.display = 'none';
-      const card = document.getElementById('share-card');
-      card.style.left = '-9999px';
-      card.style.top = '-9999px';
+      resetCardPosition();
       window._shareCanvas = null;
     }
 
