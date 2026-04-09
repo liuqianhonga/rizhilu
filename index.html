@@ -413,17 +413,20 @@
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
       const fileName = `日知录_${d}_${t.slice(0, 20)}.png`;
 
-      // 直接尝试系统分享（带文件）
+      // 直接尝试系统分享
       if (navigator.share) {
         const file = new File([blob], fileName, { type: 'image/png' });
+        const shareData = { title: t, text: '来自日知录的每日认知精进' };
+        // 如果支持文件分享，加上文件
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({ title: t, text: '来自日知录的每日认知精进', files: [file] });
-            return;
-          } catch (e) {
-            if (e.name === 'AbortError') return;
-            // 分享出错，下载图片
-          }
+          shareData.files = [file];
+        }
+        try {
+          await navigator.share(shareData);
+          return;
+        } catch (e) {
+          alert('分享失败: ' + e.name + ' - ' + e.message);
+          if (e.name === 'AbortError') return;
         }
       }
 
