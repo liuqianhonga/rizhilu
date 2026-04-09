@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>日知录 · 每日认知精进</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.bootcdn.net/ajax/libs/marked/9.1.6/marked.min.js"></script>
@@ -188,7 +188,7 @@
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      justify-content: flex-start;
       position: relative;
       overflow: visible;
       font-family: 'Noto Serif SC', serif;
@@ -197,8 +197,9 @@
     /* 移动端卡片适配 */
     @media (max-width: 768px) {
       #share-card {
-        width: 540px;
-        min-height: 300px;
+        width: min(540px, 90vw);
+        min-height: auto;
+        height: auto;
         padding: 30px 35px;
       }
       .share-card-title {
@@ -325,6 +326,8 @@
       z-index: 9999;
       animation: fadeIn 0.2s ease;
       touch-action: manipulation;
+      -webkit-user-scalable=no;
+      user-scalable=no;
     }
 
     @media (max-width: 768px) {
@@ -560,8 +563,7 @@
             <a href="https://connect.qq.com/widget/shareqq/index.html?url=${encodeURIComponent(location.href+'#item-'+item.id)}&title=${encodeURIComponent(item.title)}&summary=${encodeURIComponent(item.body.slice(0,80))}" target="_blank" style="font-size:0.75rem;color:rgba(234,234,234,0.4);text-decoration:none;padding:0.2rem 0.6rem;border:1px solid rgba(234,234,234,0.1);border-radius:9999px" onmouseover="this.style.color='#eaeaea'" onmouseout="this.style.color='rgba(234,234,234,0.4)'">🟦 QQ</a>
             <span onclick="navigator.clipboard.writeText(location.href+'#item-'+item.id).then(()=>alert('链接已复制，可分享到微信'))" style="font-size:0.75rem;color:rgba(234,234,234,0.4);cursor:pointer;padding:0.2rem 0.6rem;border:1px solid rgba(234,234,234,0.1);border-radius:9999px" onmouseover="this.style.color='#eaeaea'" onmouseout="this.style.color='rgba(234,234,234,0.4)'">🟢 微信</span>
             `}
-            <span onclick="shareItem('${encodeURIComponent(item.title)}','${encodeURIComponent(item.body.slice(0,100))}','${encodeURIComponent(location.href+'#item-'+item.id)}')" style="font-size:0.75rem;color:rgba(234,234,234,0.4);cursor:pointer;padding:0.2rem 0.6rem;border:1px solid rgba(234,234,234,0.1);border-radius:9999px" onmouseover="this.style.color='#eaeaea'" onmouseout="this.style.color='rgba(234,234,234,0.4)'">&#8679; 分享</span>
-            <span onclick="shareAsImage('${encodeURIComponent(item.title)}','${encodeURIComponent(item.body)}','${encodeURIComponent(item.date)}','${encodeURIComponent(item.source || '')}')" style="font-size:0.75rem;color:rgba(34,211,238,0.8);cursor:pointer;padding:0.2rem 0.6rem;border:1px solid rgba(34,211,238,0.3);border-radius:9999px" onmouseover="this.style.color='#22d3ee';this.style.borderColor='rgba(34,211,238,0.5)'" onmouseout="this.style.color='rgba(34,211,238,0.8)';this.style.borderColor='rgba(34,211,238,0.3)'">&#128247; 图片</span>
+            <span onclick="shareArticle('${encodeURIComponent(item.title)}','${encodeURIComponent(item.body)}','${encodeURIComponent(item.date)}','${encodeURIComponent(item.source || '')}')" style="font-size:0.75rem;color:rgba(34,211,238,0.8);cursor:pointer;padding:0.2rem 0.6rem;border:1px solid rgba(34,211,238,0.3);border-radius:9999px" onmouseover="this.style.color='#22d3ee';this.style.borderColor='rgba(34,211,238,0.5)'" onmouseout="this.style.color='rgba(34,211,238,0.8)';this.style.borderColor='rgba(34,211,238,0.3)'">&#8679; 分享</span>
           </div>
         </article>
       `;
@@ -607,7 +609,7 @@
       // 隐藏菜单，确保不影响截图
       closeShareMenu();
 
-      // 滚动到顶部并显示卡片（使用 visibility 方式而非 position）
+      // 滚动到顶部并显示卡片
       window.scrollTo(0, 0);
       const card = document.getElementById('share-card');
       card.style.visibility = 'hidden';
@@ -615,45 +617,84 @@
       card.style.left = '0';
       card.style.top = '0';
       card.style.zIndex = '-1';
+
+      // 强制重排
+      card.offsetHeight;
+
       card.style.visibility = 'visible';
 
       // 等待 DOM 更新
-      await new Promise(r => setTimeout(r, 100));
+      await new Promise(r => setTimeout(r, 150));
 
       try {
+        const isMobileDevice = window.innerWidth < 768;
+        const scale = isMobileDevice ? 1 : 2;
+        const width = isMobileDevice ? Math.min(window.innerWidth * 0.9, 540) : 540;
+
         const canvas = await html2canvas(card, {
-          scale: isMobile ? 1.5 : 2,
+          scale: scale,
+          width: width,
           useCORS: true,
-          allowTaint: true,
-          width: card.offsetWidth,
-          height: card.offsetHeight,
           backgroundColor: '#0d1b2a',
           logging: false,
           onclone: (clonedDoc) => {
             const clonedCard = clonedDoc.getElementById('share-card');
             if (clonedCard) {
               clonedCard.style.visibility = 'visible';
-              clonedCard.style.position = 'fixed';
-              clonedCard.style.left = '0';
-              clonedCard.style.top = '0';
+              clonedCard.style.position = 'static';
+              clonedCard.style.left = 'auto';
+              clonedCard.style.top = 'auto';
+              clonedCard.style.zIndex = 'auto';
             }
           }
         });
 
-        // 保存 canvas 到全局变量，供分享选项使用
-        window._shareCanvas = canvas;
-        window._shareFileName = `日知录_${d}_${t.slice(0, 20)}.png`;
+        // 恢复卡片隐藏
+        resetCardPosition();
 
-        // 检查是否支持系统分享
-        const supportShare = navigator.share && /Mobi|Android/i.test(navigator.userAgent);
-        document.getElementById('share-btn-system').style.display = supportShare ? 'flex' : 'none';
-
-        // 显示分享菜单
-        document.getElementById('share-menu').style.display = 'flex';
+        return canvas;
       } catch (e) {
-        alert('生成图片失败，请重试');
         console.error(e);
         resetCardPosition();
+        throw e;
+      }
+    }
+
+    async function shareArticle(title, body, date, source) {
+      const t = decodeURIComponent(title);
+      const b = decodeURIComponent(body);
+      const d = decodeURIComponent(date);
+      const s = decodeURIComponent(source);
+
+      try {
+        // 1. 生成卡片图片
+        const canvas = await shareAsImage(title, body, date, source);
+
+        // 2. 转 blob
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        const fileName = `日知录_${d}_${t.slice(0, 20)}.png`;
+
+        // 3. 系统分享（移动端）
+        if (navigator.share && navigator.canShare) {
+          const file = new File([blob], fileName, { type: 'image/png' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: t, text: '来自日知录的每日认知精进' });
+            return;
+          }
+        }
+
+        // 4. 降级：下载
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          console.error(e);
+          alert('分享失败，请重试');
+        }
       }
     }
 
