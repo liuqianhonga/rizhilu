@@ -609,8 +609,7 @@
       // 隐藏菜单，确保不影响截图
       closeShareMenu();
 
-      // 滚动到顶部并显示卡片
-      window.scrollTo(0, 0);
+      // 使用固定定位的卡片，无需滚动页面
       const card = document.getElementById('share-card');
       card.style.visibility = 'hidden';
       card.style.position = 'fixed';
@@ -745,14 +744,17 @@
       try {
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
         const file = new File([blob], window._shareFileName, { type: 'image/png' });
-        if (navigator.share) {
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
             title: '日知录',
             text: '分享来自日知录的每日认知精进'
           });
+          closeShareMenu();
+        } else {
+          // 浏览器不支持文件分享，降级到下载
+          downloadImage();
         }
-        closeShareMenu();
       } catch (e) {
         if (e.name !== 'AbortError') {
           console.error(e);
