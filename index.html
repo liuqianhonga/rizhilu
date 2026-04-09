@@ -413,23 +413,11 @@
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
       const fileName = `日知录_${d}_${t.slice(0, 20)}.png`;
 
-      // 检测 iOS（iOS 上的 Web Share API 不稳定，优先尝试文本分享）
+      // 检测 iOS
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-      // 尝试系统分享
-      if (navigator.share) {
-        // iOS 优先尝试不带文件的纯文本分享（更稳定）
-        if (isIOS) {
-          try {
-            await navigator.share({ title: t, text: '来自日知录的每日认知精进' });
-            return;
-          } catch (e) {
-            if (e.name === 'AbortError') return;
-            // 文本分享失败，继续尝试带文件
-          }
-        }
-
-        // 尝试带文件的分享
+      // 非 iOS 设备尝试带文件的系统分享
+      if (navigator.share && !isIOS) {
         const file = new File([blob], fileName, { type: 'image/png' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           try {
@@ -442,7 +430,7 @@
         }
       }
 
-      // 降级：直接下载
+      // 降级：直接下载图片
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
