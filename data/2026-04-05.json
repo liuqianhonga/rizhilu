@@ -24,6 +24,16 @@
       "集体行动",
       "美国政治"
     ],
-    "category": "时事热点"
+    "category": "时事热点",
+    "references": [
+      {
+        "title": "美国大罢工：约4.5万人罢工 国际海运瘫痪",
+        "url": "http://intl.ce.cn/qqss/202410/03/t20241003_39158121.shtml"
+      },
+      {
+        "title": "15万人大罢工？美国该怎么办",
+        "url": "https://www.stcn.com/article/detail/976495.html"
+      }
+    ]
   }
 ]

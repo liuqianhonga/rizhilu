@@ -30,6 +30,15 @@ dateFiles.forEach(file => {
   articles.forEach(a => {
     // Check for duplicate ID
     if (!allArticles.find(x => x.id === a.id)) {
+      // Validate: 时事热点必须有参考来源
+      const isCurrentAffairs = a.category === '时事热点' || (a.tags && a.tags.includes('时事热点'));
+      if (isCurrentAffairs) {
+        if (!a.references || !Array.isArray(a.references) || a.references.length < 2) {
+          console.error(`✗ 文章 "${a.title}" 是时事热点但缺少足够的参考来源`);
+          console.error(`  需要至少2个references，当前: ${a.references ? a.references.length : 0}个`);
+          process.exit(1);
+        }
+      }
       allArticles.push(a);
     } else {
       console.log(`⚠️ 跳过重复ID: #${a.id} ${a.title}`);

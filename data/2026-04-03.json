@@ -23,6 +23,16 @@
       "美伊冲突",
       "投资"
     ],
-    "category": "时事热点"
+    "category": "时事热点",
+    "references": [
+      {
+        "title": "伊朗战争 (2026年) - 维基百科",
+        "url": "https://zh.wikipedia.org/zh-hans/%E4%BC%8A%E6%9C%97%E6%88%98%E4%BA%89_(2026%E5%B9%B4)"
+      },
+      {
+        "title": "美伊同意停火 - 俄罗斯卫星通讯社",
+        "url": "https://sputniknews.cn/amp/20260408/1070671236.html"
+      }
+    ]
   }
 ]

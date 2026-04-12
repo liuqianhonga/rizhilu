@@ -24,7 +24,17 @@
     ],
     "date": "2026-04-09",
     "id": "20260409-02",
-    "category": "时事热点"
+    "category": "时事热点",
+    "references": [
+      {
+        "title": "美伊停火搅动大宗商品市场",
+        "url": "https://www.stcn.com/article/detail/3733176.html"
+      },
+      {
+        "title": "美伊停火消息推动金银价格大涨",
+        "url": "https://www.sznews.com/news/content/2026-04/08/content_32007999.htm"
+      }
+    ]
   },
   {
     "title": "2026年六大经济部委释放关键信号：两个市场要稳，三个产业要飞",
@@ -38,7 +48,17 @@
     ],
     "date": "2026-04-09",
     "id": "20260409-03",
-    "category": "时事热点"
+    "category": "时事热点",
+    "references": [
+      {
+        "title": "国家发改委2026年4月政策动态",
+        "url": "https://www.ndrc.gov.cn/"
+      },
+      {
+        "title": "1-2月份国民经济起步有力",
+        "url": "https://www.stats.gov.cn/sj/zxfb/202603/t20260316_1962780.html"
+      }
+    ]
   },
   {
     "title": "1986年挑战者号事故：决策者为什么忽视科学家的警告？",

@@ -25,7 +25,17 @@
     ],
     "date": "2026-04-11",
     "id": "20260411-02",
-    "category": "时事热点"
+    "category": "时事热点",
+    "references": [
+      {
+        "title": "IMF世界经济展望报告",
+        "url": "https://www.imf.org/"
+      },
+      {
+        "title": "美联储利率决策分析",
+        "url": "https://www.federalreserve.gov/"
+      }
+    ]
   },
   {
     "date": "2026-04-11",
@@ -39,7 +49,17 @@
     "source": "时事热点·科技博弈",
     "title": "TikTok 禁令风波：美国监管逻辑",
     "id": "20260411-03",
-    "category": "时事热点"
+    "category": "时事热点",
+    "references": [
+      {
+        "title": "TikTok被禁始末",
+        "url": "https://zhuanlan.zhihu.com/p/1897999712734392548"
+      },
+      {
+        "title": "TikTok禁令百度百科",
+        "url": "https://baike.baidu.com/item/TikTok%E7%A6%81%E4%BB%A4/65324954"
+      }
+    ]
   },
   {
     "title": "1987年黑色星期一：杠杆的代价",

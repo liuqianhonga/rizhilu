@@ -46,7 +46,17 @@
       "A股"
     ],
     "date": "2026-04-12",
-    "category": "时事热点"
+    "category": "时事热点",
+    "references": [
+      {
+        "title": "IMF世界经济展望2026",
+        "url": "https://www.imf.org/"
+      },
+      {
+        "title": "中国经济2026年展望",
+        "url": "https://www.stats.gov.cn/sj/zxfb/202603/t20260316_1962780.html"
+      }
+    ]
   },
   {
     "id": "20260412-04",

@@ -24,6 +24,16 @@
       "投资",
       "地缘政治"
     ],
-    "category": "时事热点"
+    "category": "时事热点",
+    "references": [
+      {
+        "title": "特朗普：同意与伊朗互相停火两周",
+        "url": "https://sputniknews.cn/20260408/1070663459.html"
+      },
+      {
+        "title": "美国民众对伊朗战争净支持率为负数",
+        "url": "https://www.chinanews.com.cn/gj/2026/04-09/10600718.shtml"
+      }
+    ]
   }
 ]
