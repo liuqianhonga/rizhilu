@@ -1,81 +1,109 @@
 # 日知录 · 每日推送工作流
 
+> 更新时间：2026-04-12
+> 内容领域详见 MEMORY.md
+
+---
+
 ## 触发条件
-- 每天早上 7:00（Windows 任务计划触发）
-- 或心跳检查时发现 lastPushDate != 今天
+- 每天早上 7:00（Cron 任务触发）
+- 或心跳检查时发现 `lastPushDate != 今天`
+
+---
+
+## 每日内容（4 篇）
+
+1. **时事热点** × 2
+2. **经典智慧** × 1
+3. **历史事件** × 1
+
+（内容领域详情见 MEMORY.md）
+
+---
 
 ## 执行步骤
 
-### 1. 生成今日认知内容（每天两条）
+### 1. 搜索热点
 
-**第一条：经典智慧**
-- 来源：道德经、孙子兵法、易经、王阳明心学、天道
-- 格式：标题 + 来源 + body（Markdown 格式） + 标签
-- body 结构：
-  - 开头：核心内容
-  - `### 标题`：分隔不同部分（应用、局势判断等）
-  - `> 引用`：金句总结
-- **认知框架要求**：每条必须包含「直接行动」；「不做也 OK」仅在涉及具体操作/投资/行动建议且真的可以跳过时才写，认知/思维/哲学类内容不强加此框架
+用 Node.js 通过 SearXNG 搜索真实新闻：
+- 国际：`http://192.168.9.55:5080/search?q=today world news&format=json&language=en`
+- 国内：`http://192.168.9.55:5080/search?q=今日热点新闻&format=json&language=zh-CN`
 
-**第二条：时事热点/历史事件**
-- 来源：时事热点（SearXNG 搜索）或 历史经典事件
-- **内容领域扩展**：
-  - 心理学/认知科学：思维偏误、决策陷阱
-  - 投资大师思想：巴菲特、芒格、达利欧的原则
-  - 商业案例：诺基亚衰落、苹果崛起等
-  - 科学思维：第一性原理、概率思维、贝叶斯思维
-  - 宏观经济：利率周期、通胀、汇率、货币政策、经济危机
-- **步骤 1：搜索热点**
-  - 用 SearXNG 搜索国际新闻：`http://192.168.9.55:5080/search?q=today world news&format=json&language=en`
-  - 用 SearXNG 搜索国内新闻：`http://192.168.9.55:5080/search?q=今日热点&format=json&language=zh-CN`
-- **步骤 2：过滤已分析事件**
-  - 读取 `memory/analyzed-topics.json`
-  - 排除已分析的热点（同一事件不同角度可以分析，但要注明新角度）
-- **步骤 3：选择事件**
-  - 从未分析的热点中选择最有认知价值的事件
-  - 优先选择：影响广泛、有决策启发、能结合经典智慧解读的事件
-- **步骤 4：分析生成**
-  - 格式：标题 + 来源 + body（Markdown 格式）
-  - body 结构：事件背景 + 认知框架解读 + 应对策略 + 金句
-  - **认知框架要求**：每条必须包含「直接行动」；「不做也 OK」仅在涉及具体操作/投资/行动建议且真的可以跳过时才写，认知/思维/哲学类内容不强加此框架
-- **步骤 5：记录已分析**
-  - 将分析的事件写入 `memory/analyzed-topics.json`
-  - 记录：日期、主题、事件、分析角度、对应 id
+读取 `memory/analyzed-topics.json` 过滤已分析事件。
 
-### 2. 推送给 TT
-- 渠道：Telegram
-- 格式：
-  ```
-  🧠 今日认知 · #序号
+### 2. 生成内容
 
-  **"标题"** ——来源
-
-  内容正文
-
-  **应用：** 现实场景应用
-
-  **一句话：** 金句总结
-  ```
-
-### 3. 更新本地数据
-- 运行 `scripts/add-cognitive.ps1` 更新 `rizhilu/data.json`
-- 或直接写入 data.json
-
-### 4. 推送到 GitHub
-```powershell
-cd C:\Users\Administrator\.openclaw\workspace-selfimprove\rizhilu
-git add .
-git commit -m "每日认知更新 - $(Get-Date -Format 'yyyy-MM-dd')"
-git push
+每篇文章格式：
+```json
+{
+  "title": "标题",
+  "body": "正文（Markdown）",
+  "source": "日知录",
+  "tags": ["标签1", "标签2"],
+  "date": "YYYY-MM-DD"
+}
 ```
 
+**body 结构**：
+1. 开头hook（1-2句，抓住注意力）
+2. `### 核心认知`（给出洞察，不泛泛而谈）
+3. `### 直接行动`（1-4条具体可执行）
+4. `---` 分隔线
+5. `**核心要点：**`（3-5条）
+6. `> 金句`（收尾）
+
+### 3. 推送前审查
+
+- [ ] 内容通顺，无错别字、无乱码
+- [ ] 格式正确（标题、正文、来源、标签、日期）
+- [ ] 有「核心认知」
+- [ ] 有「直接行动」
+- [ ] 有「核心要点」总结（3-5条）+ 收尾金句
+- [ ] **事实准确**：新闻类必须先搜索核实，不能凭记忆写
+
+### 4. 写入数据
+
+```bash
+# 批量推送（推荐）
+node daily_push.js batch @file.json
+```
+
+- 自动写入 `rizhilu/data/YYYY-MM-DD.json`
+- 自动合并到 `data.json`
+- 自动推送到 GitHub
+
 ### 5. 更新状态
-- 更新 `memory/cognitive-push-state.json` 的 lastPushDate 为今天
+
+- 更新 `memory/cognitive-push-state.json` 的 `lastPushDate`
 - 记录到 `memory/YYYY-MM-DD.md`
+- 更新 `memory/analyzed-topics.json`
+
+---
 
 ## 文件路径
-- 数据文件：`rizhilu/data.json`
-- 推送状态：`memory/cognitive-push-state.json`
-- 已分析热点：`memory/analyzed-topics.json`
-- 每日记录：`memory/YYYY-MM-DD.md`
-- 添加脚本：`scripts/daily-push.ps1`
+
+| 类型 | 路径 |
+|------|------|
+| 数据目录 | `rizhilu/data/` |
+| 合并后数据 | `rizhilu/data.json` |
+| 合并脚本 | `rizhilu/merge_data.js` |
+| 推送脚本 | `workspace/selfimprove/daily_push.js` |
+| 推送状态 | `memory/cognitive-push-state.json` |
+| 已分析热点 | `memory/analyzed-topics.json` |
+| 每日记录 | `memory/YYYY-MM-DD.md` |
+
+---
+
+## ⚠️ 重要规则
+
+1. **禁止直接编辑** `rizhilu/data.json` 和 `rizhilu/data/*.json`
+2. 所有写操作必须通过 `daily_push.js` 完成
+3. **新闻类内容必须先搜索核实**，不能凭记忆写
+4. **语言简洁有力**，不要 ChatGPT 流水账
+5. **历史事件优先选中国**的（见 MEMORY.md）
+
+---
+
+## 参考示例
+
+完整示例见文章 #37「知彼知己，百战不殆」
