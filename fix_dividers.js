@@ -1,7 +1,6 @@
 /**
- * 修复文章中核心要点分割线位置
- * 问题：--- 放在核心要点标题之前
- * 修复：把 --- 移到核心要点内容之后（金句之后）
+ * 修复核心要点分割线位置
+ * 目标：--- 在核心要点内容之后、金句之前
  */
 
 const fs = require('fs');
@@ -26,45 +25,33 @@ function fixDividers() {
       }
       
       const body = article.body;
-      const coreHeader = '**核心要点';
-      const coreIdx = body.indexOf(coreHeader);
-      if (coreIdx === -1) return article;
       
-      // 找到核心要点之前的 ---
-      const beforeCore = body.slice(0, coreIdx);
-      const hrPattern = '\n---\n';
-      const hrIdx = beforeCore.lastIndexOf(hrPattern);
-      
+      // 查找 --- 的位置
+      const hrIdx = body.lastIndexOf('\n\n---\n');
       if (hrIdx === -1) return article;
       
-      // 找到核心要点区块的结尾（金句通常是 > 开头，以 。或 。」 结尾的块引用）
-      const afterCore = body.slice(coreIdx);
+      // 查找金句
+      const quotePattern = /^>.*[。」]+.*$/gm;
+      const quoteMatch = body.match(quotePattern);
+      if (!quoteMatch) return article;
       
-      // 金句格式：> 开头，内容以 。 或 。」 结尾
-      const lastQuoteMatch = afterCore.match(/^>.*[。」]+.*$/gm);
+      const lastQuote = quoteMatch[quoteMatch.length - 1];
+      const lastQuoteFullIdx = body.lastIndexOf(lastQuote);
+      const lastQuoteEndIdx = lastQuoteFullIdx + lastQuote.length;
       
-      if (!lastQuoteMatch) return article;
-      
-      const lastQuote = lastQuoteMatch[lastQuoteMatch.length - 1];
-      const lastQuoteIdx = afterCore.lastIndexOf(lastQuote);
-      const coreSectionEnd = lastQuoteIdx + lastQuote.length;
-      
-      // 重构内容
-      const part1 = body.slice(0, hrIdx); // --- 之前的内容
-      const part2 = afterCore.slice(0, coreSectionEnd); // 核心要点整个区块
-      const part3 = body.slice(hrIdx + hrPattern.length, coreIdx); // ---和核心要点之间
-      const part4 = afterCore.slice(coreSectionEnd); // 金句之后
-      
-      // 如果 part3 不为空，说明结构不对，跳过
-      if (part3.trim()) {
-        console.log(`警告: ${article.id} 的结构异常，跳过`);
-        return article;
+      // 如果 --- 在金句之后，需要调整
+      if (hrIdx > lastQuoteEndIdx) {
+        // 删除末尾的 ---，在金句之后插入 ---
+        const beforeHr = body.slice(0, hrIdx);
+        const afterHr = body.slice(hrIdx + 5); // 去掉 \n\n---\n
+        
+        // 在金句之后插入 ---
+        const newBody = beforeHr.slice(0, lastQuoteEndIdx) + '\n\n---\n' + beforeHr.slice(lastQuoteEndIdx) + afterHr;
+        
+        article.body = newBody;
+        modified = true;
       }
       
-      const newBody = part1 + part2 + '\n\n---\n' + part4;
-      
-      article.body = newBody;
-      modified = true;
       return article;
     });
     
