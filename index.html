@@ -283,7 +283,7 @@
         <article class="article-card" id="item-${item.id}">
           <div class="mb-4">
             <h3 class="article-title">${item.title}</h3>
-            ${item.source ? `<span class="article-source inline-block mt-2">${item.source}</span>` : ''}
+            ${item.tags && item.tags[0] ? `<span class="article-source inline-block mt-2">${item.tags[0]}</span>` : ''}
           </div>
           <div class="markdown-body">${marked.parse(item.body)}</div>
           ${item.tags ? `
