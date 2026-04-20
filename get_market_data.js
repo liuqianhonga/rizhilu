@@ -30,8 +30,9 @@ if (require.main === module) {
     console.log('市场数据获取成功:');
     console.log('BTC:', data.crypto.BTC);
     console.log('ETH:', data.crypto.ETH);
-    console.log('黄金 (GLD):', data.gold.GLD, data.gold.unit);
-    console.log('原油 (USO):', data.oil.USO, data.oil.unit);
+    console.log('黄金期货 (GC=F):', data.gold['GC=F'], data.gold.unit);
+    console.log('白银期货 (SI=F):', data.silver['SI=F'], data.silver.unit);
+    console.log('原油:', data.oil.USO, data.oil.unit, '-', data.oil.note);
     console.log('标普500:', data.indices['^GSPC'].price);
     console.log('纳斯达克:', data.indices['^IXIC'].price);
   }

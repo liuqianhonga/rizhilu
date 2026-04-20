@@ -54,15 +54,20 @@ def get_market_data():
         if price:
             data["us_stocks"][symbol] = {"name": name, "price": price}
     
-    # 黄金 (GLD ETF)
-    gld_price = get_price("GLD")
-    if gld_price:
-        data["gold"] = {"GLD": gld_price, "unit": "USD/盎司"}
+    # 黄金期货 (GC=F)
+    gc_price = get_price("GC=F")
+    if gc_price:
+        data["gold"] = {"GC=F": gc_price, "unit": "USD/盎司", "name": "黄金期货"}
     
-    # 原油 (USO ETF)
+    # 白银期货 (SI=F)
+    si_price = get_price("SI=F")
+    if si_price:
+        data["silver"] = {"SI=F": si_price, "unit": "USD/盎司", "name": "白银期货"}
+    
+    # 原油：使用 USO ETF（暂无活跃期货合约）
     uso_price = get_price("USO")
     if uso_price:
-        data["oil"] = {"USO": uso_price, "unit": "USD/桶"}
+        data["oil"] = {"USO": uso_price, "unit": "USD/桶", "note": "USO ETF，暂无活跃期货合约"}
     
     # 指数
     indices = [
