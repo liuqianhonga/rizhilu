@@ -13,8 +13,14 @@
     ],
     "date": "2026-04-18",
     "references": [
-      "https://www.bbc.com/news/live/cqxdg17yr2wt",
-      "https://www.reuters.com"
+      {
+        "title": "cqxdg17yr2wt",
+        "url": "https://www.bbc.com/news/live/cqxdg17yr2wt"
+      },
+      {
+        "title": "www.reuters.com",
+        "url": "https://www.reuters.com"
+      }
     ]
   },
   {
@@ -31,8 +37,14 @@
     ],
     "date": "2026-04-18",
     "references": [
-      "https://www.bbc.com/news/world/india",
-      "https://www.cnbc.com/2026/04/16/trump-iran-war-hormuz-strait-blockade.html"
+      {
+        "title": "india",
+        "url": "https://www.bbc.com/news/world/india"
+      },
+      {
+        "title": "trump-iran-war-hormuz-strait-blockade.html",
+        "url": "https://www.cnbc.com/2026/04/16/trump-iran-war-hormuz-strait-blockade.html"
+      }
     ]
   },
   {
@@ -63,8 +75,14 @@
     ],
     "date": "2026-04-18",
     "references": [
-      "https://en.wikipedia.org/wiki/Pan_Am_Flight_103",
-      "https://www.bbc.com/news/world-africa-46401874"
+      {
+        "title": "Pan_Am_Flight_103",
+        "url": "https://en.wikipedia.org/wiki/Pan_Am_Flight_103"
+      },
+      {
+        "title": "world-africa-46401874",
+        "url": "https://www.bbc.com/news/world-africa-46401874"
+      }
     ]
   }
 ]

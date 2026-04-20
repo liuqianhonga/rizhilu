@@ -13,8 +13,14 @@
     ],
     "date": "2026-04-19",
     "references": [
-      "https://www.bbc.com/news/articles/cx2631x6nelo",
-      "https://sputniknews.cn/2026/04/08/1070663459.html"
+      {
+        "title": "cx2631x6nelo",
+        "url": "https://www.bbc.com/news/articles/cx2631x6nelo"
+      },
+      {
+        "title": "1070663459.html",
+        "url": "https://sputniknews.cn/2026/04/08/1070663459.html"
+      }
     ]
   },
   {
@@ -31,8 +37,14 @@
     ],
     "date": "2026-04-19",
     "references": [
-      "https://www.bbc.com/news/live/cqxdg17yr2wt",
-      "https://sputniknews.cn/2026/04/08/1070663459.html"
+      {
+        "title": "cqxdg17yr2wt",
+        "url": "https://www.bbc.com/news/live/cqxdg17yr2wt"
+      },
+      {
+        "title": "1070663459.html",
+        "url": "https://sputniknews.cn/2026/04/08/1070663459.html"
+      }
     ]
   },
   {
@@ -63,8 +75,14 @@
     ],
     "date": "2026-04-19",
     "references": [
-      "https://en.wikipedia.org/wiki/Gulf_War",
-      "https://www.bbc.com/news/world-middle-east-48705775"
+      {
+        "title": "Gulf_War",
+        "url": "https://en.wikipedia.org/wiki/Gulf_War"
+      },
+      {
+        "title": "world-middle-east-48705775",
+        "url": "https://www.bbc.com/news/world-middle-east-48705775"
+      }
     ]
   }
 ]

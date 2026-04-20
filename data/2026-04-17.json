@@ -13,8 +13,14 @@
     ],
     "date": "2026-04-17",
     "references": [
-      "https://www.cnbc.com/2026/04/16/trump-iran-war-hormuz-strait-blockade.html",
-      "https://www.bbc.com/news/live/cqxdg17yr2wt"
+      {
+        "title": "trump-iran-war-hormuz-strait-blockade.html",
+        "url": "https://www.cnbc.com/2026/04/16/trump-iran-war-hormuz-strait-blockade.html"
+      },
+      {
+        "title": "cqxdg17yr2wt",
+        "url": "https://www.bbc.com/news/live/cqxdg17yr2wt"
+      }
     ]
   },
   {
@@ -32,8 +38,14 @@
     ],
     "date": "2026-04-17",
     "references": [
-      "https://www.bbc.com/news/live/cqxdg17yr2wt",
-      "https://www.cnbc.com/2026/04/16/trump-iran-war-hormuz-strait-blockade.html"
+      {
+        "title": "cqxdg17yr2wt",
+        "url": "https://www.bbc.com/news/live/cqxdg17yr2wt"
+      },
+      {
+        "title": "trump-iran-war-hormuz-strait-blockade.html",
+        "url": "https://www.cnbc.com/2026/04/16/trump-iran-war-hormuz-strait-blockade.html"
+      }
     ]
   },
   {
@@ -67,8 +79,14 @@
     ],
     "date": "2026-04-17",
     "references": [
-      "https://en.wikipedia.org/wiki/2006_Lebanon_War",
-      "https://www.bbc.com/news/world-middle-east-48705775"
+      {
+        "title": "2006_Lebanon_War",
+        "url": "https://en.wikipedia.org/wiki/2006_Lebanon_War"
+      },
+      {
+        "title": "world-middle-east-48705775",
+        "url": "https://www.bbc.com/news/world-middle-east-48705775"
+      }
     ]
   }
 ]
