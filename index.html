@@ -325,6 +325,7 @@
           <div class="flex items-center gap-3 mt-4 pt-3 border-t border-highlight/10">
             <span style="font-size:0.7rem;color:rgba(234,234,234,0.3)">分享：</span>
             <span id="share-btn-${item.id}" onclick="shareArticle('${item.id}','${encodeURIComponent(item.title)}','${encodeURIComponent(item.body)}','${encodeURIComponent(item.date)}','${encodeURIComponent(item.source || '')}')" style="font-size:0.75rem;color:rgba(34,211,238,0.8);cursor:pointer;padding:0.2rem 0.6rem;border:1px solid rgba(34,211,238,0.3);border-radius:9999px" onmouseover="this.style.color='#22d3ee';this.style.borderColor='rgba(34,211,238,0.5)'" onmouseout="this.style.color='rgba(34,211,238,0.8)';this.style.borderColor='rgba(34,211,238,0.3)'">&#8679; 分享</span>
+            <span id="checkin-btn-${item.id}" onclick="toggleCheckin('${item.id}', this)" style="font-size:0.75rem;cursor:pointer;padding:0.2rem 0.6rem;border:1px solid rgba(34,211,238,0.3);border-radius:9999px">打卡</span>
           </div>
         </article>
       `;
@@ -334,7 +335,7 @@
       return new Date(s).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }).replace('星期', ' 星期');
     }
 
-    loadData().then(renderTimeline).catch(e => {
+    loadData().then(() => { renderTimeline(); loadCheckinStatus(); }).catch(e => {
       document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>加载失败</p></div>';
     });
 
@@ -349,6 +350,46 @@
       } else {
         navigator.clipboard.writeText(u).then(() => alert('链接已复制'));
       }
+    }
+
+    // ========== 打卡功能 ==========
+    function getCheckinSet() {
+      const data = localStorage.getItem('rizhilu_checkins');
+      return data ? new Set(JSON.parse(data)) : new Set();
+    }
+
+    function saveCheckinSet(set) {
+      localStorage.setItem('rizhilu_checkins', JSON.stringify([...set]));
+    }
+
+    function toggleCheckin(itemId, btn) {
+      const set = getCheckinSet();
+      if (set.has(itemId)) {
+        set.delete(itemId);
+        btn.style.color = 'rgba(34,211,238,0.8)';
+        btn.style.borderColor = 'rgba(34,211,238,0.3)';
+        btn.textContent = '打卡';
+      } else {
+        set.add(itemId);
+        btn.style.color = '#22d3ee';
+        btn.style.borderColor = '#22d3ee';
+        btn.style.backgroundColor = 'rgba(34,211,238,0.1)';
+        btn.textContent = '✓ 已打卡';
+      }
+      saveCheckinSet(set);
+    }
+
+    function loadCheckinStatus() {
+      const set = getCheckinSet();
+      set.forEach(itemId => {
+        const btn = document.getElementById('checkin-btn-' + itemId);
+        if (btn) {
+          btn.style.color = '#22d3ee';
+          btn.style.borderColor = '#22d3ee';
+          btn.style.backgroundColor = 'rgba(34,211,238,0.1)';
+          btn.textContent = '✓ 已打卡';
+        }
+      });
     }
 
     // ========== 使用 html-to-image 捕获网页卡片 ==========
