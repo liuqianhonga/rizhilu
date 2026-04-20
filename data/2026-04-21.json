@@ -1,0 +1,15 @@
+[
+  {
+    "id": 2026042101,
+    "category": "时事热点",
+    "title": "测试文章：GitHub Actions 工作流验证",
+    "body": "这是一篇测试文章，用于验证 GitHub Actions 自动合并功能是否正常工作。\n\n### 核心认知\n\n如果能看到这篇文章，说明 GitHub Actions 工作流已经正常工作了。\n\n### 直接行动\n\n1. 检查 GitHub Actions 运行状态\n2. 验证 data.json 是否包含本篇文章\n\n### 核心要点\n\n1. 这是一篇测试文章\n2. 用于验证自动化流程\n3. 如果正常，说明一切就绪\n\n> 测试成功！",
+    "source": "测试来源",
+    "tags": ["测试", "GitHub Actions"],
+    "date": "2026-04-21",
+    "references": [
+      "https://github.com/liuqianhonga/rizhilu/actions",
+      "https://docs.github.com/en/actions"
+    ]
+  }
+]
