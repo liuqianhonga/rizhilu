@@ -335,7 +335,7 @@
       return new Date(s).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }).replace('星期', ' 星期');
     }
 
-    loadData().then((data) => { renderTimeline(data); loadCheckinStatus(); console.log('Data loaded:', data.length); }).catch(e => { console.error('Load error:', e);
+    loadData().then((data) => { renderTimeline(data); loadCheckinStatus(); }).catch(e => {
       document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>加载失败</p></div>';
     });
 
@@ -354,42 +354,52 @@
 
     // ========== 打卡功能 ==========
     function getCheckinSet() {
-      const data = localStorage.getItem('rizhilu_checkins');
-      return data ? new Set(JSON.parse(data)) : new Set();
+      try {
+        const data = localStorage.getItem('rizhilu_checkins');
+        return data ? new Set(JSON.parse(data)) : new Set();
+      } catch (e) {
+        return new Set();
+      }
     }
 
     function saveCheckinSet(set) {
-      localStorage.setItem('rizhilu_checkins', JSON.stringify([...set]));
+      try {
+        localStorage.setItem('rizhilu_checkins', JSON.stringify([...set]));
+      } catch (e) {}
     }
 
     function toggleCheckin(itemId, btn) {
-      const set = getCheckinSet();
-      if (set.has(itemId)) {
-        set.delete(itemId);
-        btn.style.color = 'rgba(34,211,238,0.8)';
-        btn.style.borderColor = 'rgba(34,211,238,0.3)';
-        btn.textContent = '打卡';
-      } else {
-        set.add(itemId);
-        btn.style.color = '#22d3ee';
-        btn.style.borderColor = '#22d3ee';
-        btn.style.backgroundColor = 'rgba(34,211,238,0.1)';
-        btn.textContent = '✓ 已打卡';
-      }
-      saveCheckinSet(set);
-    }
-
-    function loadCheckinStatus() {
-      const set = getCheckinSet();
-      set.forEach(itemId => {
-        const btn = document.getElementById('checkin-btn-' + itemId);
-        if (btn) {
+      try {
+        const set = getCheckinSet();
+        if (set.has(itemId)) {
+          set.delete(itemId);
+          btn.style.color = 'rgba(34,211,238,0.8)';
+          btn.style.borderColor = 'rgba(34,211,238,0.3)';
+          btn.textContent = '打卡';
+        } else {
+          set.add(itemId);
           btn.style.color = '#22d3ee';
           btn.style.borderColor = '#22d3ee';
           btn.style.backgroundColor = 'rgba(34,211,238,0.1)';
           btn.textContent = '✓ 已打卡';
         }
-      });
+        saveCheckinSet(set);
+      } catch (e) {}
+    }
+
+    function loadCheckinStatus() {
+      try {
+        const set = getCheckinSet();
+        set.forEach(itemId => {
+          const btn = document.getElementById('checkin-btn-' + itemId);
+          if (btn) {
+            btn.style.color = '#22d3ee';
+            btn.style.borderColor = '#22d3ee';
+            btn.style.backgroundColor = 'rgba(34,211,238,0.1)';
+            btn.textContent = '✓ 已打卡';
+          }
+        });
+      } catch (e) {}
     }
 
     // ========== 使用 html-to-image 捕获网页卡片 ==========
