@@ -196,25 +196,43 @@
     
     /* 加载更多按钮 */
     #load-more-btn {
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
       width: 100%;
       padding: 1rem;
       margin-top: 1.5rem;
-      background: rgba(22, 33, 62, 0.8);
-      border: 1px solid rgba(34, 211, 238, 0.3);
-      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.1) 0%, rgba(22, 33, 62, 0.9) 100%);
+      border: 1px solid rgba(34, 211, 238, 0.4);
+      border-radius: 16px;
       color: #22d3ee;
       font-size: 0.9rem;
+      font-weight: 500;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.3s ease;
+      text-shadow: 0 0 10px rgba(34, 211, 238, 0.3);
     }
-    #load-more-btn:hover {
-      background: rgba(34, 211, 238, 0.1);
-      border-color: rgba(34, 211, 238, 0.5);
+    #load-more-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.2) 0%, rgba(22, 33, 62, 0.95) 100%);
+      border-color: rgba(34, 211, 238, 0.6);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(34, 211, 238, 0.15);
     }
     #load-more-btn:disabled {
-      opacity: 0.5;
+      opacity: 0.7;
       cursor: not-allowed;
+    }
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(34, 211, 238, 0.3);
+      border-top-color: #22d3ee;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
     
     /* 加载中 */
@@ -256,7 +274,7 @@
       <div class="loading">加载中...</div>
     </div>
     <button id="load-more-btn" onclick="loadMore()" style="display:none">
-      加载更多
+      <span class="btn-text">加载更多</span>
     </button>
   </main>
 
@@ -378,8 +396,10 @@
 
     async function loadMore() {
       const btn = document.getElementById('load-more-btn');
+      const btnText = btn.querySelector('.btn-text');
       btn.disabled = true;
-      btn.textContent = '加载中...';
+      btnText.textContent = '加载中';
+      btn.insertAdjacentHTML('afterbegin', '<div class="spinner"></div>');
       
       const pageDates = allDates.slice(loadedDays, loadedDays + DAYS_PER_PAGE);
       
@@ -390,16 +410,12 @@
         }
       }
       
-      // 模拟延迟以显示加载状态
-      setTimeout(() => {
-        loadedDays += DAYS_PER_PAGE;
-        const container = document.getElementById('timeline');
-        renderPage(container);
-        
-        btn.disabled = false;
-        btn.textContent = loadedDays < totalDays ? '加载更多' : '已加载全部';
-        btn.style.display = loadedDays < totalDays ? 'block' : 'none';
-      }, 300);
+      loadedDays += DAYS_PER_PAGE;
+      renderTimeline();
+      
+      btn.removeChild(btn.previousSibling);
+      btn.disabled = false;
+      btnText.textContent = loadedDays >= totalDays ? '已加载全部' : '加载更多';
     }
 
     function toggleToc() {
@@ -452,7 +468,8 @@
     }
 
     // 初始化
-    loadDatesIndex().then((dates) => {
+    async function init() {
+      const dates = await loadDatesIndex();
       allDates = dates;
       totalDays = dates.length;
       
@@ -462,11 +479,11 @@
       }
       
       // 先加载第一页（5天）的数据
-      loadMore().then(() => {
-        renderTimeline();
-        loadCheckinStatus();
-      });
-    }).catch(e => {
+      await loadMore();
+      loadCheckinStatus();
+    }
+    init().catch(e => {
+      console.error('初始化失败:', e);
       document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>加载失败</p></div>';
     });
 
