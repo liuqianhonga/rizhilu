@@ -1,6 +1,6 @@
 # 日知录 · 每日推送工作流
 
-> 更新时间：2026-04-12
+> 更新时间：2026-04-20
 > 内容领域详见 MEMORY.md
 
 ---
@@ -58,7 +58,7 @@
 5. `> 金句`（收尾）
 6. `---` 分隔线（在末尾）
 
-### 3. 推送前审查
+### 4. 推送前审查
 
 - [ ] 内容通顺，无错别字、无乱码
 - [ ] 格式正确（标题、正文、来源、标签、日期）
@@ -66,19 +66,22 @@
 - [ ] 有「直接行动」
 - [ ] 有「核心要点」总结（3-5条）+ 收尾金句
 - [ ] **事实准确**：新闻类必须先搜索核实，不能凭记忆写
+- [ ] **时事热点必须有至少2个参考来源**
 
-### 4. 写入数据
+### 5. 写入数据
 
-```bash
-# 批量推送（推荐）
-node daily_push.js batch @file.json
-```
+手动创建 `rizhilu/data/YYYY-MM-DD.json` 文件。
 
-- 自动写入 `rizhilu/data/YYYY-MM-DD.json`
-- 自动合并到 `data.json`
-- 自动推送到 GitHub
+### 6. 自动合并与推送
 
-### 5. 更新状态
+**GitHub Actions 自动处理（无需手动操作）：**
+- 推送 `data/*.json` 文件后，GitHub Actions 自动运行 `merge_data.js`
+- 自动将新内容合并到 `data.json`
+- 自动提交并推送到 main 分支
+
+**网站自动更新：** 合并完成后，GitHub Pages 会自动重新构建（约1-3分钟）。
+
+### 7. 更新状态
 
 - 更新 `memory/cognitive-push-state.json` 的 `lastPushDate`
 - 记录到 `memory/YYYY-MM-DD.md`
@@ -93,7 +96,7 @@ node daily_push.js batch @file.json
 | 数据目录 | `rizhilu/data/` |
 | 合并后数据 | `rizhilu/data.json` |
 | 合并脚本 | `rizhilu/merge_data.js` |
-| 推送脚本 | `workspace/selfimprove/daily_push.js` |
+| GitHub Actions | `.github/workflows/merge-data.yml` |
 | 推送状态 | `memory/cognitive-push-state.json` |
 | 已分析热点 | `memory/analyzed-topics.json` |
 | 每日记录 | `memory/YYYY-MM-DD.md` |
@@ -102,11 +105,27 @@ node daily_push.js batch @file.json
 
 ## ⚠️ 重要规则
 
-1. **禁止直接编辑** `rizhilu/data.json` 和 `rizhilu/data/*.json`
-2. 所有写操作必须通过 `daily_push.js` 完成
-3. **新闻类内容必须先搜索核实**，不能凭记忆写
-4. **语言简洁有力**，不要 ChatGPT 流水账
-5. **历史事件优先选中国**的（见 MEMORY.md）
+1. **禁止直接编辑** `rizhilu/data.json`（由 merge_data.js 自动生成）
+2. **写入规则**：
+   - 创建 `rizhilu/data/YYYY-MM-DD.json` 文件
+   - 推送到 GitHub 后，GitHub Actions 自动合并到 data.json
+3. **时事热点必须包含至少2个参考来源**
+4. **新闻类内容必须先搜索核实**，不能凭记忆写
+5. **语言简洁有力**，不要 ChatGPT 流水账
+6. **历史事件优先选中国**的（见 MEMORY.md）
+7. **注意 JSON 格式**：body 字段中的双引号必须转义，否则 merge_data.js 会跳过该文件
+
+---
+
+## 常见问题
+
+### Q: 网站上看不到新推送的内容？
+A: 检查是否已将新日期文件推送到 GitHub。GitHub Actions 会自动合并 data.json 并更新网站（约1-3分钟）。
+
+### Q: merge_data.js 跳过某个日期文件？
+A: 可能原因：
+1. JSON 格式错误（body 字段双引号未转义）
+2. 时事热点缺少参考来源（需要至少2个）
 
 ---
 
