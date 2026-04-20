@@ -316,13 +316,10 @@
 
     // 加载指定日期的文章
     async function loadDateData(date) {
-      console.log('loadDateData:', date);
       try {
         const res = await fetch(`data/${date}.json`);
-        console.log('fetch done:', date, res.status);
         if (!res.ok) return [];
         const data = await res.json();
-        console.log('parsed:', date, Array.isArray(data) ? data.length : 0);
         return Array.isArray(data) ? data : [];
       } catch (e) {
         console.error('loadDateData error:', date, e);
@@ -399,7 +396,6 @@
     }
 
     async function loadMore() {
-      console.log('loadMore 开始, loadedDays:', loadedDays);
       const btn = document.getElementById('load-more-btn');
       const btnText = btn.querySelector('.btn-text');
       btn.disabled = true;
@@ -411,7 +407,6 @@
       btn.insertBefore(spinner, btnText);
       
       const pageDates = allDates.slice(loadedDays, loadedDays + DAYS_PER_PAGE);
-      console.log('pageDates:', pageDates);
       
       // 加载这5天的数据
       for (const date of pageDates) {
@@ -421,14 +416,12 @@
       }
       
       loadedDays += DAYS_PER_PAGE;
-      console.log('loadedDays after +=:', loadedDays);
       renderTimeline();
       
       // 移除 spinner
       btn.removeChild(spinner);
       btn.disabled = false;
       btnText.textContent = loadedDays >= totalDays ? '已加载全部' : '加载更多';
-      console.log('loadMore 完成');
     }
 
     function toggleToc() {
@@ -482,10 +475,8 @@
 
     // 初始化
     async function init() {
-      console.log('init 开始');
       try {
         const dates = await loadDatesIndex();
-        console.log('dates loaded:', dates.length, dates);
         allDates = dates;
         totalDays = dates.length;
         
@@ -494,11 +485,8 @@
           return;
         }
         
-        console.log('开始加载更多...');
         await loadMore();
-        console.log('loadMore 完成');
         loadCheckinStatus();
-        console.log('init 完成');
       } catch(e) {
         console.error('init 错误:', e);
         document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>加载失败: ' + e.message + '</p></div>';
