@@ -145,6 +145,17 @@
 node get_market_data.js
 ```
 
+**OpenNews API 新闻获取（每天限制80次，仅用于时事热点）**
+```bash
+node get_news.js          # 测试，输出到控制台
+```
+
+**功能：**
+- 获取带 AI 评分的新闻（score/grade/signal）
+- 支持 Reuters、Bloomberg 等权威来源
+- 信号：long/short/neutral
+- 摘要：中文/英文双语
+
 **输出示例：**
 ```json
 {
