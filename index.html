@@ -399,7 +399,11 @@
       const btnText = btn.querySelector('.btn-text');
       btn.disabled = true;
       btnText.textContent = '加载中';
-      btn.insertAdjacentHTML('afterbegin', '<div class="spinner"></div>');
+      
+      // 添加 spinner
+      const spinner = document.createElement('div');
+      spinner.className = 'spinner';
+      btn.insertBefore(spinner, btnText);
       
       const pageDates = allDates.slice(loadedDays, loadedDays + DAYS_PER_PAGE);
       
@@ -413,7 +417,8 @@
       loadedDays += DAYS_PER_PAGE;
       renderTimeline();
       
-      btn.removeChild(btn.previousSibling);
+      // 移除 spinner
+      btn.removeChild(spinner);
       btn.disabled = false;
       btnText.textContent = loadedDays >= totalDays ? '已加载全部' : '加载更多';
     }
