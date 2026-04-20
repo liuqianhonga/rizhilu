@@ -193,6 +193,29 @@
       padding: 0.25rem 0.75rem;
       border-radius: 9999px;
     }
+    
+    /* 加载更多按钮 */
+    #load-more-btn {
+      display: block;
+      width: 100%;
+      padding: 1rem;
+      margin-top: 1.5rem;
+      background: rgba(22, 33, 62, 0.8);
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      border-radius: 12px;
+      color: #22d3ee;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #load-more-btn:hover {
+      background: rgba(34, 211, 238, 0.1);
+      border-color: rgba(34, 211, 238, 0.5);
+    }
+    #load-more-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
 
   </style>
   <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "544982ef94b14702bfbd5acf328f1357"}'></script>
@@ -223,6 +246,9 @@
 
   <main class="max-w-3xl mx-auto px-3 sm:px-4 py-8 sm:py-12">
     <div id="timeline"></div>
+    <button id="load-more-btn" onclick="loadMore()" style="display:none">
+      加载更多
+    </button>
   </main>
 
   <footer class="py-6 sm:py-8 text-center text-text/30 text-xs sm:text-sm border-t border-highlight/30">
@@ -242,48 +268,96 @@
   <script>
     marked.setOptions({ breaks: true, gfm: true });
 
+    // 分页配置
+    const DAYS_PER_PAGE = 7;  // 每次加载7天
+    let allData = [];         // 全部数据
+    let loadedDays = 0;       // 已加载天数
+    let totalDays = 0;        // 总天数
+
     async function loadData() {
       const res = await fetch('data.json');
       return res.json();
     }
 
-    function renderTimeline(data) {
+    function renderTimeline() {
       const container = document.getElementById('timeline');
       const stats = document.getElementById('stats');
       const toc = document.getElementById('toc-content');
+      const loadMoreBtn = document.getElementById('load-more-btn');
       
-      const dates = [...new Set(data.map(i => i.date))].sort().reverse();
-      stats.textContent = `共 ${data.length} 条认知 · 跨越 ${dates.length} 天`;
+      // 按日期分组并排序（最新在前）
+      const dates = [...new Set(allData.map(i => i.date))].sort().reverse();
+      totalDays = dates.length;
       
-      const grouped = {};
-      data.forEach(i => {
-        if (!grouped[i.date]) grouped[i.date] = [];
-        grouped[i.date].push(i);
-      });
-
-      // 生成目录
+      // 更新统计
+      stats.textContent = `共 ${allData.length} 条认知 · 跨越 ${totalDays} 天`;
+      
+      // 生成目录（显示所有日期）
       let tocHtml = '';
       dates.forEach(date => {
         tocHtml += `<div style="margin-bottom:0.75rem">
           <div onclick="jumpToDate('${date}')" style="color:#22d3ee;font-size:0.75rem;font-weight:700;cursor:pointer;padding:0.25rem 0;border-bottom:1px solid rgba(34,211,238,0.15);margin-bottom:0.375rem">${formatDate(date)}</div>
-          ${grouped[date].map(item => `<div onclick="jumpToItem('${item.id}')" style="color:rgba(234,234,234,0.6);font-size:0.75rem;cursor:pointer;padding:0.2rem 0 0.2rem 0.75rem;line-height:1.4" onmouseover="this.style.color='#eaeaea'" onmouseout="this.style.color='rgba(234,234,234,0.6)'">${item.title}</div>`).join('')}
+          <div id="toc-date-${date}"></div>
         </div>`;
       });
       toc.innerHTML = tocHtml;
 
-      let html = '';
-      dates.forEach(date => {
+      // 渲染当前页
+      renderPage(dates, container);
+      
+      // 显示/隐藏加载更多按钮
+      loadMoreBtn.style.display = loadedDays < totalDays ? 'block' : 'none';
+    }
+    
+    function renderPage(dates, container) {
+      const catOrder = {'经典智慧': 1, '时事热点': 2, '历史事件': 3};
+      const pageDates = dates.slice(loadedDays, loadedDays + DAYS_PER_PAGE);
+      
+      let html = container.innerHTML;
+      
+      pageDates.forEach(date => {
+        const dayArticles = allData.filter(i => i.date === date).sort((a, b) => (catOrder[a.category] || 99) - (catOrder[b.category] || 99));
+        
         html += `
           <div class="mb-10" id="date-${date}">
             <div class="flex items-center gap-2 mb-4">
               <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0"></span>
               <time class="text-sm text-text/50">${formatDate(date)}</time>
             </div>
-            <div>${(function(){const catOrder={'经典智慧':1,'时事热点':2,'历史事件':3};return grouped[date].sort((a,b)=>(catOrder[a.category]||99)-(catOrder[b.category]||99)).map(renderItem).join('');})()}</div>
+            <div>
+              ${dayArticles.map(r => renderItem(r)).join('')}
+            </div>
           </div>
         `;
+        
+        // 更新目录中的文章列表
+        const tocDateEl = document.getElementById('toc-date-' + date);
+        if (tocDateEl) {
+          tocDateEl.innerHTML = dayArticles.map(item => 
+            `<div onclick="jumpToItem('${item.id}')" style="color:rgba(234,234,234,0.6);font-size:0.75rem;cursor:pointer;padding:0.2rem 0 0.2rem 0.75rem;line-height:1.4" onmouseover="this.style.color='#eaeaea'" onmouseout="this.style.color='rgba(234,234,234,0.6)'">${item.title}</div>`
+          ).join('');
+        }
       });
+      
       container.innerHTML = html;
+    }
+
+    function loadMore() {
+      const btn = document.getElementById('load-more-btn');
+      btn.disabled = true;
+      btn.textContent = '加载中...';
+      
+      // 模拟延迟以显示加载状态
+      setTimeout(() => {
+        loadedDays += DAYS_PER_PAGE;
+        const container = document.getElementById('timeline');
+        const dates = [...new Set(allData.map(i => i.date))].sort().reverse();
+        renderPage(dates, container);
+        
+        btn.disabled = false;
+        btn.textContent = loadedDays < totalDays ? '加载更多' : '已加载全部';
+        btn.style.display = loadedDays < totalDays ? 'block' : 'none';
+      }, 300);
     }
 
     function toggleToc() {
@@ -335,7 +409,11 @@
       return new Date(s).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }).replace('星期', ' 星期');
     }
 
-    loadData().then((data) => { renderTimeline(data); loadCheckinStatus(); }).catch(e => {
+    loadData().then((data) => { 
+      allData = data;
+      renderTimeline(); 
+      loadCheckinStatus(); 
+    }).catch(e => {
       document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>加载失败</p></div>';
     });
 
@@ -449,7 +527,6 @@
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
-        position: static !important;
         pointer-events: none !important;
         width: ${cardWidth}px !important;
         background-color: #16213e !important;
