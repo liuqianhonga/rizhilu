@@ -267,19 +267,23 @@
     async function loadDateData(date) {
       try {
         const res = await fetch(`data/${date}.json`);
+        console.log('[DEBUG] fetch data/' + date + '.json:', res.ok ? 'ok' : 'fail', res.status);
         if (!res.ok) return [];
         return await res.json();
       } catch (e) {
+        console.error('[DEBUG] loadDateData error for', date, e);
         return [];
       }
     }
 
     // 初始化：先显示目录，后台加载数据
     async function init() {
-      // 1. 加载日期索引
-      const data = await loadDatesIndex();
-      allDates = data.dates || [];
-      totalDays = allDates.length;
+      try {
+        // 1. 加载日期索引
+        const data = await loadDatesIndex();
+        console.log('[DEBUG] dates.json loaded:', data);
+        allDates = data.dates || [];
+        totalDays = allDates.length;
       
       if (totalDays === 0) {
         document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>暂无数据</p></div>';
@@ -293,12 +297,17 @@
       
       // 3. 后台加载所有文章数据
       loadAllArticlesInBackground();
+      } catch(e) {
+        console.error('[DEBUG] init error:', e);
+        document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>加载失败: ' + e.message + '</p></div>';
+      }
     }
 
     // 后台加载所有文章
     async function loadAllArticlesInBackground() {
       for (const date of allDates) {
         loadedArticles[date] = await loadDateData(date);
+        console.log('[DEBUG] loaded', date, ':', loadedArticles[date].length, 'articles');
         loadedCount++;
         
         // 每加载完一天就更新显示
