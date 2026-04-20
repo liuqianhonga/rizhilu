@@ -335,7 +335,7 @@
       return new Date(s).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }).replace('星期', ' 星期');
     }
 
-    loadData().then(() => { renderTimeline(); loadCheckinStatus(); }).catch(e => {
+    loadData().then((data) => { renderTimeline(data); loadCheckinStatus(); console.log('Data loaded:', data.length); }).catch(e => { console.error('Load error:', e);
       document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>加载失败</p></div>';
     });
 
