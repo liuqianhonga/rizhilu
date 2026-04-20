@@ -201,31 +201,30 @@
       justify-content: center;
       gap: 0.5rem;
       width: 100%;
-      padding: 1rem;
-      margin-top: 1.5rem;
-      background: linear-gradient(135deg, rgba(34, 211, 238, 0.1) 0%, rgba(22, 33, 62, 0.9) 100%);
-      border: 1px solid rgba(34, 211, 238, 0.4);
-      border-radius: 16px;
-      color: #22d3ee;
-      font-size: 0.9rem;
-      font-weight: 500;
+      padding: 0.875rem 1.5rem;
+      margin-top: 2rem;
+      background: rgba(22, 33, 62, 0.6);
+      border: 1px solid rgba(34, 211, 238, 0.25);
+      border-radius: 9999px;
+      color: rgba(234, 234, 234, 0.7);
+      font-size: 0.85rem;
       cursor: pointer;
-      transition: all 0.3s ease;
-      text-shadow: 0 0 10px rgba(34, 211, 238, 0.3);
+      transition: all 0.25s ease;
+      backdrop-filter: blur(8px);
     }
     #load-more-btn:hover:not(:disabled) {
-      background: linear-gradient(135deg, rgba(34, 211, 238, 0.2) 0%, rgba(22, 33, 62, 0.95) 100%);
-      border-color: rgba(34, 211, 238, 0.6);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 20px rgba(34, 211, 238, 0.15);
+      background: rgba(34, 211, 238, 0.1);
+      border-color: rgba(34, 211, 238, 0.5);
+      color: #22d3ee;
+      transform: translateY(-1px);
     }
     #load-more-btn:disabled {
-      opacity: 0.7;
+      opacity: 0.6;
       cursor: not-allowed;
     }
     .spinner {
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
       border: 2px solid rgba(34, 211, 238, 0.3);
       border-top-color: #22d3ee;
       border-radius: 50%;
@@ -461,7 +460,7 @@
       // 移除 spinner
       btn.removeChild(spinner);
       btn.disabled = false;
-      btnText.textContent = loadedDays >= totalDays ? '已加载全部' : '加载更多';
+      btnText.textContent = loadedDays >= totalDays ? '没有更多了' : '加载更多内容';
       document.getElementById('load-more-btn').style.display = loadedDays >= totalDays ? 'none' : 'block';
     }
 
