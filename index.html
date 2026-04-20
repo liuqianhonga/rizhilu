@@ -485,10 +485,14 @@
           return;
         }
         
+        // 先渲染空的时间线结构
+        renderTimeline();
+        
+        // 再加载数据
         await loadMore();
         loadCheckinStatus();
       } catch(e) {
-        console.error('init 错误:', e);
+        console.error('初始化失败:', e);
         document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>加载失败: ' + e.message + '</p></div>';
       }
     }
