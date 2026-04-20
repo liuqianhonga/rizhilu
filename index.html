@@ -406,7 +406,8 @@
       spinner.className = 'spinner';
       btn.insertBefore(spinner, btnText);
       
-      const pageDates = allDates.slice(loadedDays, loadedDays + DAYS_PER_PAGE);
+      const startIdx = loadedDays;
+      const pageDates = allDates.slice(startIdx, startIdx + DAYS_PER_PAGE);
       
       // 加载这5天的数据
       for (const date of pageDates) {
@@ -415,13 +416,53 @@
         }
       }
       
+      // 先渲染刚加载的数据
+      const container = document.getElementById('timeline');
+      const catOrder = {'经典智慧': 1, '时事热点': 2, '历史事件': 3};
+      const newlyLoadedDates = allDates.slice(startIdx, startIdx + DAYS_PER_PAGE);
+      let html = '';
+      newlyLoadedDates.forEach(date => {
+        const dayArticles = loadedArticles[date] || [];
+        if (dayArticles.length === 0) return;
+        html += `
+          <div class="mb-10" id="date-${date}">
+            <div class="flex items-center gap-2 mb-4">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0"></span>
+              <time class="text-sm text-text/50">${formatDate(date)}</time>
+            </div>
+            <div>
+              ${dayArticles.sort((a, b) => (catOrder[a.category] || 99) - (catOrder[b.category] || 99)).map(r => renderItem(r)).join('')}
+            </div>
+          </div>
+        `;
+        
+        // 更新目录
+        const tocDateEl = document.getElementById('toc-date-' + date);
+        if (tocDateEl) {
+          tocDateEl.innerHTML = dayArticles.map(item => 
+            `<div onclick="jumpToItem('${item.id}')" style="color:rgba(234,234,234,0.6);font-size:0.75rem;cursor:pointer;padding:0.2rem 0 0.2rem 0.75rem;line-height:1.4" onmouseover="this.style.color='#eaeaea'" onmouseout="this.style.color='rgba(234,234,234,0.6)'">${item.title}</div>`
+          ).join('');
+        }
+      });
+      
+      // 首次加载时替换内容，后续追加
+      if (startIdx === 0) {
+        container.innerHTML = html;
+      } else {
+        container.innerHTML += html;
+      }
+      
+      // 更新统计
+      const totalArticles = Object.values(loadedArticles).flat().length;
+      document.getElementById('stats').textContent = `共 ${totalArticles} 条认知 · 跨越 ${totalDays} 天`;
+      
       loadedDays += DAYS_PER_PAGE;
-      renderTimeline();
       
       // 移除 spinner
       btn.removeChild(spinner);
       btn.disabled = false;
       btnText.textContent = loadedDays >= totalDays ? '已加载全部' : '加载更多';
+      document.getElementById('load-more-btn').style.display = loadedDays >= totalDays ? 'none' : 'block';
     }
 
     function toggleToc() {
@@ -485,10 +526,6 @@
           return;
         }
         
-        // 先渲染空的时间线结构
-        renderTimeline();
-        
-        // 再加载数据
         await loadMore();
         loadCheckinStatus();
       } catch(e) {
