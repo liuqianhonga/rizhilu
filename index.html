@@ -329,8 +329,6 @@
     function renderTimeline() {
       const container = document.getElementById('timeline');
       const stats = document.getElementById('stats');
-      const toc = document.getElementById('toc-content');
-      const loadMoreBtn = document.getElementById('load-more-btn');
       
       totalDays = allDates.length;
       
@@ -338,21 +336,14 @@
       const totalArticles = Object.values(loadedArticles).flat().length;
       stats.textContent = `共 ${totalArticles} 条认知 · 跨越 ${totalDays} 天`;
       
-      // 生成目录（显示所有日期）
-      let tocHtml = '';
-      allDates.forEach(date => {
-        tocHtml += `<div style="margin-bottom:0.75rem">
-          <div onclick="jumpToDate('${date}')" style="color:#22d3ee;font-size:0.75rem;font-weight:700;cursor:pointer;padding:0.25rem 0;border-bottom:1px solid rgba(34,211,238,0.15);margin-bottom:0.375rem">${formatDate(date)}</div>
-          <div id="toc-date-${date}"></div>
-        </div>`;
-      });
-      toc.innerHTML = tocHtml;
+      // 生成目录（显示所有日期，标记未加载的）
+      updateTocAll();
 
       // 渲染当前页
       renderPage(container);
       
       // 显示/隐藏加载更多按钮
-      loadMoreBtn.style.display = loadedDays < totalDays ? 'block' : 'none';
+      document.getElementById('load-more-btn').style.display = loadedDays < totalDays ? 'block' : 'none';
     }
     
     function renderPage(container) {
@@ -434,15 +425,10 @@
             </div>
           </div>
         `;
-        
-        // 更新目录
-        const tocDateEl = document.getElementById('toc-date-' + date);
-        if (tocDateEl) {
-          tocDateEl.innerHTML = dayArticles.map(item => 
-            `<div onclick="jumpToItem('${item.id}')" style="color:rgba(234,234,234,0.6);font-size:0.75rem;cursor:pointer;padding:0.2rem 0 0.2rem 0.75rem;line-height:1.4" onmouseover="this.style.color='#eaeaea'" onmouseout="this.style.color='rgba(234,234,234,0.6)'">${item.title}</div>`
-          ).join('');
-        }
       });
+      
+      // 更新整个目录（显示所有已加载的文章）
+      updateTocAll();
       
       // 首次加载时替换内容，后续追加
       if (startIdx === 0) {
@@ -469,9 +455,94 @@
       p.style.display = p.style.display === 'none' ? 'block' : 'none';
     }
 
-    function jumpToDate(date) {
+    async function jumpToDate(date) {
+      const dateIdx = allDates.indexOf(date);
+      if (dateIdx === -1) return;
+      
+      // 如果还没加载到这个日期，先加载
+      if (dateIdx >= loadedDays) {
+        await loadAllUpTo(dateIdx);
+      }
+      
       const el = document.getElementById('date-' + date);
-      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); toggleToc(); }
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      toggleToc();
+    }
+    
+    async function loadAllUpTo(targetIdx) {
+      const btn = document.getElementById('load-more-btn');
+      const btnText = btn.querySelector('.btn-text');
+      btn.disabled = true;
+      btnText.textContent = '加载中';
+      
+      const spinner = document.createElement('div');
+      spinner.className = 'spinner';
+      btn.insertBefore(spinner, btnText);
+      
+      // 加载所有未加载的日期直到目标
+      while (loadedDays <= targetIdx) {
+        const pageDates = allDates.slice(loadedDays, loadedDays + DAYS_PER_PAGE);
+        for (const d of pageDates) {
+          if (!loadedArticles[d]) {
+            loadedArticles[d] = await loadDateData(d);
+          }
+        }
+        loadedDays += DAYS_PER_PAGE;
+      }
+      
+      // 重新渲染所有已加载的数据
+      const container = document.getElementById('timeline');
+      const catOrder = {'经典智慧': 1, '时事热点': 2, '历史事件': 3};
+      let html = '';
+      for (let i = 0; i < loadedDays && i < allDates.length; i++) {
+        const d = allDates[i];
+        const dayArticles = loadedArticles[d] || [];
+        if (dayArticles.length === 0) continue;
+        html += `
+          <div class="mb-10" id="date-${d}">
+            <div class="flex items-center gap-2 mb-4">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0"></span>
+              <time class="text-sm text-text/50">${formatDate(d)}</time>
+            </div>
+            <div>
+              ${dayArticles.sort((a, b) => (catOrder[a.category] || 99) - (catOrder[b.category] || 99)).map(r => renderItem(r)).join('')}
+            </div>
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+      
+      // 更新统计和目录
+      const totalArticles = Object.values(loadedArticles).flat().length;
+      document.getElementById('stats').textContent = `共 ${totalArticles} 条认知 · 跨越 ${totalDays} 天`;
+      updateTocAll();
+      
+      // 移除 spinner
+      btn.removeChild(spinner);
+      btn.disabled = false;
+      btnText.textContent = loadedDays >= totalDays ? '没有更多了' : '加载更多内容';
+      document.getElementById('load-more-btn').style.display = loadedDays >= totalDays ? 'none' : 'block';
+    }
+    
+    function updateTocAll() {
+      const toc = document.getElementById('toc-content');
+      const catOrder = {'经典智慧': 1, '时事热点': 2, '历史事件': 3};
+      let tocHtml = '';
+      allDates.forEach(date => {
+        const dayArticles = loadedArticles[date] || [];
+        tocHtml += `<div style="margin-bottom:0.75rem">
+          <div onclick="jumpToDate('${date}')" style="color:#22d3ee;font-size:0.75rem;font-weight:700;cursor:pointer;padding:0.25rem 0;border-bottom:1px solid rgba(34,211,238,0.15);margin-bottom:0.375rem">${formatDate(date)}</div>
+          <div id="toc-date-${date}">`;
+        if (dayArticles.length > 0) {
+          tocHtml += dayArticles.map(item => 
+            `<div onclick="jumpToItem('${item.id}')" style="color:rgba(234,234,234,0.6);font-size:0.75rem;cursor:pointer;padding:0.2rem 0 0.2rem 0.75rem;line-height:1.4" onmouseover="this.style.color='#eaeaea'" onmouseout="this.style.color='rgba(234,234,234,0.6)'">${item.title}</div>`
+          ).join('');
+        } else {
+          tocHtml += `<div style="color:rgba(234,234,234,0.3);font-size:0.7rem;padding:0.2rem 0 0.2rem 0.75rem">待加载</div>`;
+        }
+        tocHtml += `</div></div>`;
+      });
+      toc.innerHTML = tocHtml;
     }
 
     function jumpToItem(id) {
