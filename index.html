@@ -318,7 +318,7 @@
             <div class="mt-4 pt-4 border-t border-highlight/20">
               <div style="font-size:0.7rem;color:rgba(234,234,234,0.5);margin-bottom:0.5rem;">参考内容：</div>
               <div style="font-size:0.75rem;">
-                ${item.references.map(r => `<a href="${r.url}" target="_blank" style="color:rgba(34,211,238,0.8);display:block;margin-bottom:0.25rem;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">• ${r.title}</a>`).join('')}
+                ${item.references.map(r => { const title = r.title === r.url ? (r.url.split('/').pop() || r.url) : r.title; return `<a href="${r.url}" target="_blank" style="color:rgba(34,211,238,0.8);display:block;margin-bottom:0.25rem;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">• ${title}</a>`; }).join('')}
               </div>
             </div>
           ` : ''}
