@@ -216,6 +216,13 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
+    
+    /* 加载中 */
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: rgba(234, 234, 234, 0.5);
+    }
 
   </style>
   <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "544982ef94b14702bfbd5acf328f1357"}'></script>
@@ -245,7 +252,9 @@
   </div>
 
   <main class="max-w-3xl mx-auto px-3 sm:px-4 py-8 sm:py-12">
-    <div id="timeline"></div>
+    <div id="timeline">
+      <div class="loading">加载中...</div>
+    </div>
     <button id="load-more-btn" onclick="loadMore()" style="display:none">
       加载更多
     </button>
@@ -269,14 +278,34 @@
     marked.setOptions({ breaks: true, gfm: true });
 
     // 分页配置
-    const DAYS_PER_PAGE = 7;  // 每次加载7天
-    let allData = [];         // 全部数据
+    const DAYS_PER_PAGE = 5;  // 每次加载5天
+    let allDates = [];        // 全部日期列表
     let loadedDays = 0;       // 已加载天数
     let totalDays = 0;        // 总天数
+    let loadedArticles = {};   // 已加载的文章（按日期存储）
 
-    async function loadData() {
-      const res = await fetch('data.json');
-      return res.json();
+    // 加载日期索引
+    async function loadDatesIndex() {
+      try {
+        const res = await fetch('dates.json');
+        const data = await res.json();
+        return data.dates || [];
+      } catch (e) {
+        console.error('加载日期索引失败:', e);
+        return [];
+      }
+    }
+
+    // 加载指定日期的文章
+    async function loadDateData(date) {
+      try {
+        const res = await fetch(`data/${date}.json`);
+        if (!res.ok) return [];
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
+      } catch (e) {
+        return [];
+      }
     }
 
     function renderTimeline() {
@@ -285,16 +314,15 @@
       const toc = document.getElementById('toc-content');
       const loadMoreBtn = document.getElementById('load-more-btn');
       
-      // 按日期分组并排序（最新在前）
-      const dates = [...new Set(allData.map(i => i.date))].sort().reverse();
-      totalDays = dates.length;
+      totalDays = allDates.length;
       
       // 更新统计
-      stats.textContent = `共 ${allData.length} 条认知 · 跨越 ${totalDays} 天`;
+      const totalArticles = Object.values(loadedArticles).flat().length;
+      stats.textContent = `共 ${totalArticles} 条认知 · 跨越 ${totalDays} 天`;
       
       // 生成目录（显示所有日期）
       let tocHtml = '';
-      dates.forEach(date => {
+      allDates.forEach(date => {
         tocHtml += `<div style="margin-bottom:0.75rem">
           <div onclick="jumpToDate('${date}')" style="color:#22d3ee;font-size:0.75rem;font-weight:700;cursor:pointer;padding:0.25rem 0;border-bottom:1px solid rgba(34,211,238,0.15);margin-bottom:0.375rem">${formatDate(date)}</div>
           <div id="toc-date-${date}"></div>
@@ -303,20 +331,21 @@
       toc.innerHTML = tocHtml;
 
       // 渲染当前页
-      renderPage(dates, container);
+      renderPage(container);
       
       // 显示/隐藏加载更多按钮
       loadMoreBtn.style.display = loadedDays < totalDays ? 'block' : 'none';
     }
     
-    function renderPage(dates, container) {
+    function renderPage(container) {
       const catOrder = {'经典智慧': 1, '时事热点': 2, '历史事件': 3};
-      const pageDates = dates.slice(loadedDays, loadedDays + DAYS_PER_PAGE);
+      const pageDates = allDates.slice(loadedDays, loadedDays + DAYS_PER_PAGE);
       
-      let html = container.innerHTML;
+      let html = '';
       
       pageDates.forEach(date => {
-        const dayArticles = allData.filter(i => i.date === date).sort((a, b) => (catOrder[a.category] || 99) - (catOrder[b.category] || 99));
+        const dayArticles = loadedArticles[date] || [];
+        if (dayArticles.length === 0) return;
         
         html += `
           <div class="mb-10" id="date-${date}">
@@ -325,7 +354,7 @@
               <time class="text-sm text-text/50">${formatDate(date)}</time>
             </div>
             <div>
-              ${dayArticles.map(r => renderItem(r)).join('')}
+              ${dayArticles.sort((a, b) => (catOrder[a.category] || 99) - (catOrder[b.category] || 99)).map(r => renderItem(r)).join('')}
             </div>
           </div>
         `;
@@ -339,20 +368,33 @@
         }
       });
       
-      container.innerHTML = html;
+      // 如果是首次加载，替换整个内容
+      if (loadedDays === 0) {
+        container.innerHTML = html;
+      } else {
+        container.innerHTML += html;
+      }
     }
 
-    function loadMore() {
+    async function loadMore() {
       const btn = document.getElementById('load-more-btn');
       btn.disabled = true;
       btn.textContent = '加载中...';
+      
+      const pageDates = allDates.slice(loadedDays, loadedDays + DAYS_PER_PAGE);
+      
+      // 加载这5天的数据
+      for (const date of pageDates) {
+        if (!loadedArticles[date]) {
+          loadedArticles[date] = await loadDateData(date);
+        }
+      }
       
       // 模拟延迟以显示加载状态
       setTimeout(() => {
         loadedDays += DAYS_PER_PAGE;
         const container = document.getElementById('timeline');
-        const dates = [...new Set(allData.map(i => i.date))].sort().reverse();
-        renderPage(dates, container);
+        renderPage(container);
         
         btn.disabled = false;
         btn.textContent = loadedDays < totalDays ? '加载更多' : '已加载全部';
@@ -409,10 +451,21 @@
       return new Date(s).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }).replace('星期', ' 星期');
     }
 
-    loadData().then((data) => { 
-      allData = data;
-      renderTimeline(); 
-      loadCheckinStatus(); 
+    // 初始化
+    loadDatesIndex().then((dates) => {
+      allDates = dates;
+      totalDays = dates.length;
+      
+      if (dates.length === 0) {
+        document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>暂无数据</p></div>';
+        return;
+      }
+      
+      // 先加载第一页（5天）的数据
+      loadMore().then(() => {
+        renderTimeline();
+        loadCheckinStatus();
+      });
     }).catch(e => {
       document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>加载失败</p></div>';
     });

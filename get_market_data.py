@@ -11,14 +11,10 @@ def get_wti_price():
     """从 tradingeconomics 获取 WTI 原油价格"""
     try:
         import requests
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        headers = {'User-Agent': 'Mozilla/5.0'}
         r = requests.get('https://tradingeconomics.com/commodity/crude-oil', headers=headers, timeout=10)
         import re
         m = re.search(r'Crude Oil rose to ([0-9.]+) USD', r.text)
-        if m:
-            return float(m.group(1))
-        # 尝试另一种模式
-        m = re.search(r'price.*?([0-9]{2}\.[0-9]+)', r.text)
         if m:
             return float(m.group(1))
     except Exception as e:
