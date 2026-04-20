@@ -7,6 +7,24 @@ import yfinance as yf
 import json
 from datetime import datetime
 
+def get_wti_price():
+    """从 tradingeconomics 获取 WTI 原油价格"""
+    try:
+        import requests
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        r = requests.get('https://tradingeconomics.com/commodity/crude-oil', headers=headers, timeout=10)
+        import re
+        m = re.search(r'Crude Oil rose to ([0-9.]+) USD', r.text)
+        if m:
+            return float(m.group(1))
+        # 尝试另一种模式
+        m = re.search(r'price.*?([0-9]{2}\.[0-9]+)', r.text)
+        if m:
+            return float(m.group(1))
+    except Exception as e:
+        print(f"Error fetching WTI: {e}", flush=True)
+    return None
+
 def get_price(symbol, name=None):
     """获取单个标的的最新价格"""
     try:
@@ -64,10 +82,15 @@ def get_market_data():
     if si_price:
         data["silver"] = {"SI=F": si_price, "unit": "USD/盎司", "name": "白银期货"}
     
-    # 原油：使用 USO ETF（暂无活跃期货合约）
-    uso_price = get_price("USO")
-    if uso_price:
-        data["oil"] = {"USO": uso_price, "unit": "USD/桶", "note": "USO ETF，暂无活跃期货合约"}
+    # 原油：优先从 tradingeconomics 获取 WTI 现货价
+    wti_price = get_wti_price()
+    if wti_price:
+        data["oil"] = {"WTI": wti_price, "unit": "USD/桶", "source": "tradingeconomics.com", "name": "WTI原油"}
+    else:
+        # 备用：USO ETF
+        uso_price = get_price("USO")
+        if uso_price:
+            data["oil"] = {"USO": uso_price, "unit": "USD/桶", "note": "USO ETF，暂无活跃期货合约"}
     
     # 指数
     indices = [
