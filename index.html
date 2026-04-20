@@ -52,13 +52,6 @@
         font-size: 1rem !important;
         margin-top: 1.25rem !important;
       }
-      .timeline-date {
-        font-size: 1rem !important;
-      }
-      .timeline-marker {
-        width: 0.625rem !important;
-        height: 0.625rem !important;
-      }
     }
     
     .markdown-body {
@@ -112,7 +105,6 @@
       font-weight: 700;
     }
     
-    /* 引用块样式（金句） */
     .markdown-body blockquote {
       border-left: 4px solid #22d3ee;
       padding: 1.25rem 1.5rem;
@@ -129,25 +121,12 @@
       line-height: 1.6;
     }
     
-    /* 分隔线样式（---） */
     .markdown-body hr {
       border: none;
       border-top: 1px solid rgba(103, 232, 249, 0.2);
       margin: 1.5rem 0;
     }
     
-    /* 时间线优化 */
-    .timeline-item {
-      margin-bottom: 3rem;
-    }
-    
-    .timeline-content {
-      margin-left: 1.75rem;
-      border-left-width: 2px;
-      padding-left: 1.5rem;
-    }
-    
-    /* 卡片间距 */
     .article-card {
       background: rgba(22, 33, 62, 0.5);
       border-radius: 12px;
@@ -174,16 +153,6 @@
       background: rgba(15, 52, 96, 0.4);
       padding: 0.375rem 0.75rem;
       border-radius: 9999px;
-      white-space: nowrap;
-    }
-    
-    .article-source {
-      font-size: 0.75rem;
-      color: rgba(234, 234, 234, 0.5);
-      background: rgba(15, 52, 96, 0.4);
-      padding: 0.375rem 0.75rem;
-      border-radius: 9999px;
-      white-space: nowrap;
     }
 
     .tag-item {
@@ -194,6 +163,17 @@
       border-radius: 9999px;
     }
     
+    /* 日期区块 - 未加载时显示占位 */
+    .date-skeleton {
+      opacity: 0.4;
+    }
+    .date-skeleton .article-title {
+      color: rgba(234, 234, 234, 0.3);
+    }
+    .date-skeleton .time-dot {
+      background: rgba(103, 232, 249, 0.3);
+    }
+
     /* 加载更多按钮 */
     #load-more-btn {
       display: flex;
@@ -221,24 +201,6 @@
     #load-more-btn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
-    }
-    .spinner {
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(34, 211, 238, 0.3);
-      border-top-color: #22d3ee;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    /* 加载中 */
-    .loading {
-      text-align: center;
-      padding: 2rem;
-      color: rgba(234, 234, 234, 0.5);
     }
 
   </style>
@@ -269,12 +231,7 @@
   </div>
 
   <main class="max-w-3xl mx-auto px-3 sm:px-4 py-8 sm:py-12">
-    <div id="timeline">
-      <div class="loading">加载中...</div>
-    </div>
-    <button id="load-more-btn" onclick="loadMore()" style="display:none">
-      <span class="btn-text">加载更多</span>
-    </button>
+    <div id="timeline"></div>
   </main>
 
   <footer class="py-6 sm:py-8 text-center text-text/30 text-xs sm:text-sm border-t border-highlight/30">
@@ -294,260 +251,183 @@
   <script>
     marked.setOptions({ breaks: true, gfm: true });
 
-    // 分页配置
-    const DAYS_PER_PAGE = 5;  // 每次加载5天
-    let allDates = [];        // 全部日期列表
-    let loadedDays = 0;       // 已加载天数
-    let totalDays = 0;        // 总天数
-    let loadedArticles = {};   // 已加载的文章（按日期存储）
+    // 全局状态
+    let allDates = [];
+    let totalDays = 0;
+    let loadedArticles = {};  // { date: [articles] }
+    let loadedCount = 0;     // 已加载的天数
 
     // 加载日期索引
     async function loadDatesIndex() {
-      try {
-        const res = await fetch('dates.json');
-        const data = await res.json();
-        return data.dates || [];
-      } catch (e) {
-        console.error('加载日期索引失败:', e);
-        return [];
-      }
+      const res = await fetch('dates.json');
+      return res.json();
     }
 
-    // 加载指定日期的文章
+    // 后台加载指定日期的文章
     async function loadDateData(date) {
       try {
         const res = await fetch(`data/${date}.json`);
         if (!res.ok) return [];
-        const data = await res.json();
-        return Array.isArray(data) ? data : [];
+        return await res.json();
       } catch (e) {
-        console.error('loadDateData error:', date, e);
         return [];
       }
     }
 
-    function renderTimeline() {
-      const container = document.getElementById('timeline');
-      const stats = document.getElementById('stats');
-      
+    // 初始化：先显示目录，后台加载数据
+    async function init() {
+      // 1. 加载日期索引
+      const data = await loadDatesIndex();
+      allDates = data.dates || [];
       totalDays = allDates.length;
       
-      // 更新统计
-      const totalArticles = Object.values(loadedArticles).flat().length;
-      stats.textContent = `共 ${totalArticles} 条认知 · 跨越 ${totalDays} 天`;
-      
-      // 生成目录（显示所有日期，标记未加载的）
-      updateTocAll();
-
-      // 渲染当前页
-      renderPage(container);
-      
-      // 显示/隐藏加载更多按钮
-      document.getElementById('load-more-btn').style.display = loadedDays < totalDays ? 'block' : 'none';
-    }
-    
-    function renderPage(container) {
-      const catOrder = {'经典智慧': 1, '时事热点': 2, '历史事件': 3};
-      const pageDates = allDates.slice(loadedDays, loadedDays + DAYS_PER_PAGE);
-      
-      let html = '';
-      
-      pageDates.forEach(date => {
-        const dayArticles = loadedArticles[date] || [];
-        if (dayArticles.length === 0) return;
-        
-        html += `
-          <div class="mb-10" id="date-${date}">
-            <div class="flex items-center gap-2 mb-4">
-              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0"></span>
-              <time class="text-sm text-text/50">${formatDate(date)}</time>
-            </div>
-            <div>
-              ${dayArticles.sort((a, b) => (catOrder[a.category] || 99) - (catOrder[b.category] || 99)).map(r => renderItem(r)).join('')}
-            </div>
-          </div>
-        `;
-        
-        // 更新目录中的文章列表
-        const tocDateEl = document.getElementById('toc-date-' + date);
-        if (tocDateEl) {
-          tocDateEl.innerHTML = dayArticles.map(item => 
-            `<div onclick="jumpToItem('${item.id}')" style="color:rgba(234,234,234,0.6);font-size:0.75rem;cursor:pointer;padding:0.2rem 0 0.2rem 0.75rem;line-height:1.4" onmouseover="this.style.color='#eaeaea'" onmouseout="this.style.color='rgba(234,234,234,0.6)'">${item.title}</div>`
-          ).join('');
-        }
-      });
-      
-      // 如果是首次加载，替换整个内容
-      if (loadedDays === 0) {
-        container.innerHTML = html;
-      } else {
-        container.innerHTML += html;
-      }
-    }
-
-    async function loadMore() {
-      const btn = document.getElementById('load-more-btn');
-      const btnText = btn.querySelector('.btn-text');
-      btn.disabled = true;
-      btnText.textContent = '加载中';
-      
-      // 添加 spinner
-      const spinner = document.createElement('div');
-      spinner.className = 'spinner';
-      btn.insertBefore(spinner, btnText);
-      
-      const startIdx = loadedDays;
-      const pageDates = allDates.slice(startIdx, startIdx + DAYS_PER_PAGE);
-      
-      // 加载这5天的数据
-      for (const date of pageDates) {
-        if (!loadedArticles[date]) {
-          loadedArticles[date] = await loadDateData(date);
-        }
+      if (totalDays === 0) {
+        document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>暂无数据</p></div>';
+        return;
       }
       
-      // 先渲染刚加载的数据
+      // 2. 立即渲染目录（带占位符）
+      renderTimelineWithPlaceholders();
+      updateToc();
+      document.getElementById('stats').textContent = `共 ${totalDays * 4} 条认知 · 跨越 ${totalDays} 天`;
+      
+      // 3. 后台加载所有文章数据
+      loadAllArticlesInBackground();
+    }
+
+    // 后台加载所有文章
+    async function loadAllArticlesInBackground() {
+      for (const date of allDates) {
+        loadedArticles[date] = await loadDateData(date);
+        loadedCount++;
+        
+        // 每加载完一天就更新显示
+        if (loadedCount === 1) {
+          // 首次加载完成，替换占位符
+          renderTimeline();
+        } else {
+          // 增量更新
+          updateDateBlock(date);
+        }
+        
+        // 更新统计
+        const totalArticles = Object.values(loadedArticles).flat().length;
+        document.getElementById('stats').textContent = `共 ${totalArticles} 条认知 · 跨越 ${totalDays} 天`;
+        
+        // 更新 TOC
+        updateToc();
+      }
+      
+      // 全部加载完成
+      document.getElementById('load-more-btn')?.remove();
+    }
+
+    // 渲染带占位符的时间线
+    function renderTimelineWithPlaceholders() {
       const container = document.getElementById('timeline');
       const catOrder = {'经典智慧': 1, '时事热点': 2, '历史事件': 3};
-      const newlyLoadedDates = allDates.slice(startIdx, startIdx + DAYS_PER_PAGE);
+      
       let html = '';
-      newlyLoadedDates.forEach(date => {
-        const dayArticles = loadedArticles[date] || [];
-        if (dayArticles.length === 0) return;
+      allDates.forEach(date => {
         html += `
-          <div class="mb-10" id="date-${date}">
+          <div class="mb-10 date-skeleton" id="date-block-${date}">
             <div class="flex items-center gap-2 mb-4">
-              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0"></span>
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0 time-dot"></span>
               <time class="text-sm text-text/50">${formatDate(date)}</time>
             </div>
-            <div>
-              ${dayArticles.sort((a, b) => (catOrder[a.category] || 99) - (catOrder[b.category] || 99)).map(r => renderItem(r)).join('')}
+            <div class="articles-container" id="articles-${date}">
+              <div style="color:rgba(234,234,234,0.3);font-size:0.85rem;padding:0.5rem 0">加载中...</div>
             </div>
           </div>
         `;
       });
       
-      // 更新整个目录（显示所有已加载的文章）
-      updateTocAll();
-      
-      // 首次加载时替换内容，后续追加
-      if (startIdx === 0) {
-        container.innerHTML = html;
-      } else {
-        container.innerHTML += html;
-      }
-      
-      // 更新统计
-      const totalArticles = Object.values(loadedArticles).flat().length;
-      document.getElementById('stats').textContent = `共 ${totalArticles} 条认知 · 跨越 ${totalDays} 天`;
-      
-      loadedDays += DAYS_PER_PAGE;
-      
-      // 移除 spinner
-      btn.removeChild(spinner);
-      btn.disabled = false;
-      btnText.textContent = loadedDays >= totalDays ? '没有更多了' : '加载更多内容';
-      document.getElementById('load-more-btn').style.display = loadedDays >= totalDays ? 'none' : 'block';
-    }
-
-    function toggleToc() {
-      const p = document.getElementById('toc-panel');
-      p.style.display = p.style.display === 'none' ? 'block' : 'none';
-    }
-
-    async function jumpToDate(date) {
-      const dateIdx = allDates.indexOf(date);
-      if (dateIdx === -1) return;
-      
-      // 如果还没加载到这个日期，先加载
-      if (dateIdx >= loadedDays) {
-        await loadAllUpTo(dateIdx);
-      }
-      
-      const el = document.getElementById('date-' + date);
-      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-      toggleToc();
-    }
-    
-    async function loadAllUpTo(targetIdx) {
-      const btn = document.getElementById('load-more-btn');
-      const btnText = btn.querySelector('.btn-text');
-      btn.disabled = true;
-      btnText.textContent = '加载中';
-      
-      const spinner = document.createElement('div');
-      spinner.className = 'spinner';
-      btn.insertBefore(spinner, btnText);
-      
-      // 加载所有未加载的日期直到目标
-      while (loadedDays <= targetIdx) {
-        const pageDates = allDates.slice(loadedDays, loadedDays + DAYS_PER_PAGE);
-        for (const d of pageDates) {
-          if (!loadedArticles[d]) {
-            loadedArticles[d] = await loadDateData(d);
-          }
-        }
-        loadedDays += DAYS_PER_PAGE;
-      }
-      
-      // 重新渲染所有已加载的数据
-      const container = document.getElementById('timeline');
-      const catOrder = {'经典智慧': 1, '时事热点': 2, '历史事件': 3};
-      let html = '';
-      for (let i = 0; i < loadedDays && i < allDates.length; i++) {
-        const d = allDates[i];
-        const dayArticles = loadedArticles[d] || [];
-        if (dayArticles.length === 0) continue;
-        html += `
-          <div class="mb-10" id="date-${d}">
-            <div class="flex items-center gap-2 mb-4">
-              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0"></span>
-              <time class="text-sm text-text/50">${formatDate(d)}</time>
-            </div>
-            <div>
-              ${dayArticles.sort((a, b) => (catOrder[a.category] || 99) - (catOrder[b.category] || 99)).map(r => renderItem(r)).join('')}
-            </div>
-          </div>
-        `;
-      }
       container.innerHTML = html;
-      
-      // 更新统计和目录
-      const totalArticles = Object.values(loadedArticles).flat().length;
-      document.getElementById('stats').textContent = `共 ${totalArticles} 条认知 · 跨越 ${totalDays} 天`;
-      updateTocAll();
-      
-      // 移除 spinner
-      btn.removeChild(spinner);
-      btn.disabled = false;
-      btnText.textContent = loadedDays >= totalDays ? '没有更多了' : '加载更多内容';
-      document.getElementById('load-more-btn').style.display = loadedDays >= totalDays ? 'none' : 'block';
     }
-    
-    function updateTocAll() {
-      const toc = document.getElementById('toc-content');
+
+    // 完整渲染时间线
+    function renderTimeline() {
+      const container = document.getElementById('timeline');
       const catOrder = {'经典智慧': 1, '时事热点': 2, '历史事件': 3};
-      let tocHtml = '';
+      
+      let html = '';
       allDates.forEach(date => {
         const dayArticles = loadedArticles[date] || [];
-        tocHtml += `<div style="margin-bottom:0.75rem">
+        html += `
+          <div class="mb-10" id="date-block-${date}">
+            <div class="flex items-center gap-2 mb-4">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0"></span>
+              <time class="text-sm text-text/50">${formatDate(date)}</time>
+            </div>
+            <div class="articles-container" id="articles-${date}">
+              ${dayArticles.length > 0 
+                ? dayArticles.sort((a, b) => (catOrder[a.category] || 99) - (catOrder[b.category] || 99)).map(r => renderItem(r)).join('')
+                : '<div style="color:rgba(234,234,234,0.3);font-size:0.85rem;padding:0.5rem 0">暂无内容</div>'
+              }
+            </div>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+    }
+
+    // 更新单个日期区块
+    function updateDateBlock(date) {
+      const catOrder = {'经典智慧': 1, '时事热点': 2, '历史事件': 3};
+      const block = document.getElementById('date-block-' + date);
+      const container = document.getElementById('articles-' + date);
+      
+      if (!block || !container) return;
+      
+      block.classList.remove('date-skeleton');
+      const dayArticles = loadedArticles[date] || [];
+      
+      if (dayArticles.length > 0) {
+        container.innerHTML = dayArticles.sort((a, b) => (catOrder[a.category] || 99) - (catOrder[b.category] || 99)).map(r => renderItem(r)).join('');
+      } else {
+        container.innerHTML = '<div style="color:rgba(234,234,234,0.3);font-size:0.85rem;padding:0.5rem 0">暂无内容</div>';
+      }
+    }
+
+    // 更新目录
+    function updateToc() {
+      const toc = document.getElementById('toc-content');
+      const catOrder = {'经典智慧': 1, '时事热点': 2, '历史事件': 3};
+      
+      let html = '';
+      allDates.forEach(date => {
+        const dayArticles = loadedArticles[date] || [];
+        const isLoaded = dayArticles.length > 0;
+        
+        html += `<div style="margin-bottom:0.75rem">
           <div onclick="jumpToDate('${date}')" style="color:#22d3ee;font-size:0.75rem;font-weight:700;cursor:pointer;padding:0.25rem 0;border-bottom:1px solid rgba(34,211,238,0.15);margin-bottom:0.375rem">${formatDate(date)}</div>
           <div id="toc-date-${date}">`;
-        if (dayArticles.length > 0) {
-          tocHtml += dayArticles.map(item => 
+        
+        if (isLoaded) {
+          html += dayArticles.map(item => 
             `<div onclick="jumpToItem('${item.id}')" style="color:rgba(234,234,234,0.6);font-size:0.75rem;cursor:pointer;padding:0.2rem 0 0.2rem 0.75rem;line-height:1.4" onmouseover="this.style.color='#eaeaea'" onmouseout="this.style.color='rgba(234,234,234,0.6)'">${item.title}</div>`
           ).join('');
         } else {
-          tocHtml += `<div style="color:rgba(234,234,234,0.3);font-size:0.7rem;padding:0.2rem 0 0.2rem 0.75rem">待加载</div>`;
+          html += `<div style="color:rgba(234,234,234,0.3);font-size:0.7rem;padding:0.2rem 0 0.2rem 0.75rem">加载中...</div>`;
         }
-        tocHtml += `</div></div>`;
+        
+        html += `</div></div>`;
       });
-      toc.innerHTML = tocHtml;
+      
+      toc.innerHTML = html;
+    }
+
+    function jumpToDate(date) {
+      const el = document.getElementById('date-block-' + date);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      toggleToc();
     }
 
     function jumpToItem(id) {
       const el = document.getElementById('item-' + id);
-      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); toggleToc(); }
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      toggleToc();
     }
 
     function renderItem(item) {
@@ -567,7 +447,10 @@
             <div class="mt-4 pt-4 border-t border-highlight/20">
               <div style="font-size:0.7rem;color:rgba(234,234,234,0.5);margin-bottom:0.5rem;">参考内容：</div>
               <div style="font-size:0.75rem;">
-                ${item.references.map(r => { const title = r.title === r.url ? (r.url.split('/').pop() || r.url) : r.title; return `<a href="${r.url}" target="_blank" style="color:rgba(34,211,238,0.8);display:block;margin-bottom:0.25rem;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">• ${title}</a>`; }).join('')}
+                ${item.references.map(r => { 
+                  const title = r.title || r.url?.split('/').pop() || '链接'; 
+                  return `<a href="${r.url}" target="_blank" style="color:rgba(34,211,238,0.8);display:block;margin-bottom:0.25rem;text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">• ${title}</a>`; 
+                }).join('')}
               </div>
             </div>
           ` : ''}
@@ -584,40 +467,16 @@
       return new Date(s).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }).replace('星期', ' 星期');
     }
 
-    // 初始化
-    async function init() {
-      try {
-        const dates = await loadDatesIndex();
-        allDates = dates;
-        totalDays = dates.length;
-        
-        if (dates.length === 0) {
-          document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>暂无数据</p></div>';
-          return;
-        }
-        
-        renderTimeline();
-        await loadMore();
-        loadCheckinStatus();
-      } catch(e) {
-        console.error('初始化失败:', e);
-        document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>加载失败: ' + e.message + '</p></div>';
-      }
+    function toggleToc() {
+      const p = document.getElementById('toc-panel');
+      p.style.display = p.style.display === 'none' ? 'block' : 'none';
     }
+
     init();
 
     window.addEventListener('scroll', () => {
       document.getElementById('top-btn').style.display = window.scrollY > 200 ? 'inline' : 'none';
     });
-
-    function shareItem(title, text, url) {
-      const t = decodeURIComponent(title), tx = decodeURIComponent(text), u = decodeURIComponent(url);
-      if (navigator.share) {
-        navigator.share({ title: t, text: tx, url: u });
-      } else {
-        navigator.clipboard.writeText(u).then(() => alert('链接已复制'));
-      }
-    }
 
     // ========== 打卡功能 ==========
     function getCheckinSet() {
@@ -669,35 +528,28 @@
       } catch (e) {}
     }
 
-    // ========== 使用 html-to-image 捕获网页卡片 ==========
+    // ========== 分享功能 ==========
     async function shareAsImage(itemId) {
       const originalCard = document.getElementById('item-' + itemId);
       if (!originalCard) return null;
 
-      // 克隆卡片
       const clonedCard = originalCard.cloneNode(true);
-
-      // 移除分享区域
       const shareSection = clonedCard.querySelector('.flex.items-center.gap-3.mt-4.pt-3');
       if (shareSection) shareSection.remove();
 
-      // 创建隔离容器（隐藏）
       const container = document.createElement('div');
       container.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none;z-index:-1;overflow:hidden;background:#16213e;';
       document.body.appendChild(container);
       container.appendChild(clonedCard);
 
-      // 手机宽度适配
       const isMobile = window.innerWidth < 768;
       const cardWidth = isMobile ? Math.min(540, window.innerWidth * 0.9) : 720;
       const padding = isMobile ? '1.25rem' : '1.75rem';
-      const topPadding = isMobile ? '44px' : '0'; // 刘海屏安全距离
+      const topPadding = isMobile ? '44px' : '0';
 
-      // 生成二维码（使用 QR Server API 生成带颜色的二维码）
       const itemUrl = location.href.split('#')[0] + '#item-' + itemId;
       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(itemUrl)}&color=34-211-238&bgcolor=22-33-62`;
 
-      // 创建 footer
       const footer = document.createElement('div');
       footer.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:16px 8px 0 8px;margin-top:20px;border-top:1px solid rgba(103,232,249,0.15);';
       footer.innerHTML = `
@@ -711,7 +563,6 @@
       `;
       clonedCard.appendChild(footer);
 
-      // 确保卡片可见，顶部留安全距离
       clonedCard.style.cssText = `
         display: block !important;
         visibility: visible !important;
@@ -725,7 +576,6 @@
         box-sizing: border-box !important;
       `;
 
-      // 等待渲染
       await new Promise(r => setTimeout(r, 100));
 
       try {
@@ -748,7 +598,7 @@
       const d = decodeURIComponent(date);
       const btn = document.getElementById('share-btn-' + itemId);
       const originalText = btn.textContent;
-      btn.textContent = '...生成中';
+      btn.textContent = '...';
       btn.style.pointerEvents = 'none';
 
       const canvas = await shareAsImage(itemId);
@@ -763,10 +613,8 @@
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
       const fileName = `日知录_${d}_${t.slice(0, 20)}.png`;
 
-      // 检测 iOS
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-      // 非 iOS 设备尝试带文件的系统分享
       if (navigator.share && !isIOS) {
         const file = new File([blob], fileName, { type: 'image/png' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -775,12 +623,10 @@
             return;
           } catch (e) {
             if (e.name === 'AbortError') return;
-            // 分享出错，降级到下载
           }
         }
       }
 
-      // 降级：直接下载图片
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
