@@ -137,6 +137,29 @@
    - 历史事件：无 references
 4. **新闻类内容必须先搜索核实**，不能凭记忆写
 5. **语言简洁有力**，不要 ChatGPT 流水账
+
+### 附：市场数据获取
+
+推送前可获取实时市场数据：
+```bash
+node get_market_data.js
+```
+
+**输出示例：**
+```json
+{
+  "crypto": { "BTC": 74726.61, "ETH": 2293.3 },
+  "us_stocks": { "AAPL": {name:"苹果", price:270.23}, ... },
+  "gold": { "GLD": 445.93, "unit": "USD/盎司" },
+  "oil": { "USO": 116.04, "unit": "USD/桶" },
+  "indices": { "标普500": 7126.06, "纳斯达克": 24468.48 }
+}
+```
+
+**注意：**
+- GLD 是黄金ETF，价格为每份ETF份额，不是现货金价格（仅供参考）
+- USO 是原油ETF，价格为每份ETF份额（已是最接近原油的指标）
+- 美股数据来自 Yahoo Finance（yfinance），可能有几分钟延迟
 6. **历史事件优先选中国**的（见 MEMORY.md）
 7. **注意 JSON 格式**：body 字段中的双引号必须转义，否则 merge_data.js 会跳过该文件
 
