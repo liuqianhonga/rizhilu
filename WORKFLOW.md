@@ -42,6 +42,7 @@
 每篇文章格式：
 ```json
 {
+  "id": "YYYY-MM-DD_NN",
   "title": "标题",
   "body": "正文（Markdown）",
   "source": "日知录",
@@ -49,6 +50,14 @@
   "date": "YYYY-MM-DD"
 }
 ```
+
+**ID 命名规范**：`YYYY-MM-DD_NN`（如 `2026-04-20_01`）
+- 按日期分组，同一天内按序号排列（01, 02, 03...）
+
+**references 格式规范**：
+- **时事热点**：必须有 references，格式为 `[{title: "标题", url: "https://..."}]`
+- **经典智慧**：无 references 字段
+- **历史事件**：无 references 字段
 
 **body 结构**：
 1. 开头hook（1-2句，抓住注意力）
@@ -108,8 +117,12 @@
 1. **禁止直接编辑** `rizhilu/data.json`（由 merge_data.js 自动生成）
 2. **写入规则**：
    - 创建 `rizhilu/data/YYYY-MM-DD.json` 文件
+   - ID 格式：`YYYY-MM-DD_NN`（如 `2026-04-20_01`）
    - 推送到 GitHub 后，GitHub Actions 自动合并到 data.json
-3. **时事热点必须包含至少2个参考来源**
+3. **references 格式**：
+   - 时事热点：必须包含至少2个 references，格式为 `[{title, url}]` 对象数组
+   - 经典智慧：无 references
+   - 历史事件：无 references
 4. **新闻类内容必须先搜索核实**，不能凭记忆写
 5. **语言简洁有力**，不要 ChatGPT 流水账
 6. **历史事件优先选中国**的（见 MEMORY.md）
