@@ -32,7 +32,7 @@ if (require.main === module) {
     console.log('ETH:', data.crypto.ETH);
     console.log('黄金期货 (GC=F):', data.gold['GC=F'], data.gold.unit);
     console.log('白银期货 (SI=F):', data.silver['SI=F'], data.silver.unit);
-    console.log('原油:', data.oil.USO, data.oil.unit, '-', data.oil.note);
+    console.log('原油:', data.oil.WTI || data.oil.USO, data.oil.unit, '-', data.oil.source || data.oil.note);
     console.log('标普500:', data.indices['^GSPC'].price);
     console.log('纳斯达克:', data.indices['^IXIC'].price);
   }
