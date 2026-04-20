@@ -8,7 +8,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const WORKSPACE = 'C:\\Users\\Administrator\\.openclaw\\workspaces\\ziwo\\rizhilu';
+// 自动获取当前脚本所在目录（支持 Windows 和 Linux）
+const WORKSPACE = __dirname;
 const DATA_DIR = path.join(WORKSPACE, 'data');
 const OUTPUT_FILE = path.join(WORKSPACE, 'data.json');
 

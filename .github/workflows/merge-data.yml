@@ -1,0 +1,50 @@
+name: Merge Data JSON
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'data/*.json'
+      - 'merge_data.js'
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run merge script
+        run: node merge_data.js
+
+      - name: Check for changes
+        id: git-check
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit"
+          else
+            echo "Changes detected, will commit"
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git add -A
+            git commit -m "ci: 自动合并 data/*.json 生成 data.json [skip ci]"
+            echo "should_push=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Push changes
+        if: steps.git-check.outputs.should_push == 'true'
+        run: |
+          git push origin main
