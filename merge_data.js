@@ -8,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const WORKSPACE = 'C:\\Users\\Administrator\\.openclaw\\workspace\\selfimprove\\rizhilu';
+const WORKSPACE = 'C:\\Users\\Administrator\\.openclaw\\workspaces\\ziwo\\rizhilu';
 const DATA_DIR = path.join(WORKSPACE, 'data');
 const OUTPUT_FILE = path.join(WORKSPACE, 'data.json');
 
@@ -25,8 +25,14 @@ const allArticles = [];
 // Merge all date files (newest dates first for display order)
 dateFiles.forEach(file => {
   const filePath = path.join(DATA_DIR, file);
-  const content = fs.readFileSync(filePath, 'utf8');
-  const articles = JSON.parse(content);
+  let articles;
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    articles = JSON.parse(content);
+  } catch (e) {
+    console.warn(`⚠️ 跳过无效文件 ${file}: ${e.message.substring(0, 80)}`);
+    return;
+  }
   articles.forEach(a => {
     // Check for duplicate ID
     if (!allArticles.find(x => x.id === a.id)) {
