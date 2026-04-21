@@ -446,7 +446,7 @@
             <h3 class="article-title">${item.title}</h3>
             ${item.tags && item.tags[0] ? `<span class="article-source inline-block mt-2">${item.tags[0]}</span>` : ''}
           </div>
-          <div class="markdown-body">${marked.parse(item.body)}</div>
+          <div class="markdown-body">${(function(){try{return marked.parse(item.body)}catch(e){return '<pre>marked error: '+e.message+'\n'+item.body.substring(0,200)+'</pre>'}})()}</div>
           ${item.tags ? `
             <div class="flex flex-wrap gap-2 mt-5 pt-4 border-t border-highlight/20">
               ${item.tags.map(t => `<span class="tag-item">#${t}</span>`).join('')}
