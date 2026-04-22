@@ -59,5 +59,18 @@ allArticles.sort((a, b) => b.id - a.id);
 // Write merged data
 fs.writeFileSync(OUTPUT_FILE, JSON.stringify(allArticles, null, 2), 'utf8');
 
+// Auto-generate dates.json from directory (no manual maintenance needed)
+const dates = dateFiles
+  .map(f => f.replace('.json', ''))
+  .sort((a, b) => b.localeCompare(a)); // descending (newest first)
+
+const datesFile = path.join(WORKSPACE, 'dates.json');
+const datesData = {
+  dates: dates,
+  lastUpdated: new Date().toISOString().slice(0, 10)
+};
+fs.writeFileSync(datesFile, JSON.stringify(datesData, null, 2), 'utf8');
+
 console.log(`✅ 合并完成: ${dateFiles.length} 个日期文件, 共 ${allArticles.length} 篇文章`);
 console.log(`📁 输出: ${OUTPUT_FILE}`);
+console.log(`📅 日期索引: ${datesFile} (${dates.length} 个日期)`);
