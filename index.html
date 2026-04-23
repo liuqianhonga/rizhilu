@@ -252,10 +252,11 @@
     marked.setOptions({ breaks: true, gfm: true });
 
     // 全局状态
-    let allDates = [];
+    let allDates = [];       // [{date, count, articles:[{id,title,category}]}]
     let totalDays = 0;
-    let loadedArticles = {};  // { date: [articles] }
-    let loadedCount = 0;     // 已加载的天数
+    let totalArticlesCount = 0;
+    let loadedArticles = {};  // { date: [full articles] }
+    let loadedCount = 0;
 
     // 加载日期索引
     async function loadDatesIndex() {
@@ -263,168 +264,145 @@
       return res.json();
     }
 
-    // 后台加载指定日期的文章
+    // 后台加载指定日期的完整文章
     async function loadDateData(date) {
       try {
         const res = await fetch(`data/${date}.json`);
-        console.log('[DEBUG] fetch data/' + date + '.json:', res.ok ? 'ok' : 'fail', res.status);
         if (!res.ok) return [];
         return await res.json();
       } catch (e) {
-        console.error('[DEBUG] loadDateData error for', date, e);
         return [];
       }
     }
 
-    // 初始化：先显示目录，后台加载数据
+    // 初始化
     async function init() {
       try {
-        // 1. 加载日期索引
         const data = await loadDatesIndex();
-        console.log('[DEBUG] dates.json loaded:', data);
-        allDates = data.dates || [];
+        // 兼容新格式 {totalArticles, dates:[{date,count,articles}]} 和旧格式 {dates:['2026-04-23',...]}
+        const rawDates = data.dates || [];
+        if (rawDates.length > 0 && typeof rawDates[0] === 'string') {
+          // 旧格式：转换为对象数组
+          allDates = rawDates.map(d => ({ date: d, count: 0, articles: [] }));
+          totalArticlesCount = 0;
+        } else {
+          allDates = rawDates;
+          totalArticlesCount = data.totalArticles || 0;
+        }
+        // 新格式日期是升序，翻转为降序（最新在前）
+        allDates = [...allDates].reverse();
         totalDays = allDates.length;
-      
-      if (totalDays === 0) {
-        document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>暂无数据</p></div>';
-        return;
-      }
-      
-      // 2. 立即渲染目录（带占位符）
-      renderTimelineWithPlaceholders();
-      updateToc();
-      document.getElementById('stats').textContent = `共 ${totalDays * 4} 条认知 · 跨越 ${totalDays} 天`;
-      
-      // 3. 后台加载所有文章数据
-      loadAllArticlesInBackground();
+
+        if (totalDays === 0) {
+          document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>暂无数据</p></div>';
+          return;
+        }
+
+        // 立即渲染（用索引中的标题占位）
+        renderTimeline();
+        updateToc();
+        document.getElementById('stats').textContent =
+          totalArticlesCount > 0
+            ? `共 ${totalArticlesCount} 条认知 · 跨越 ${totalDays} 天`
+            : `跨越 ${totalDays} 天`;
+
+        // 后台加载完整文章内容
+        loadAllArticlesInBackground();
       } catch(e) {
-        console.error('[DEBUG] init error:', e);
         document.getElementById('timeline').innerHTML = '<div class="text-center text-text/50 py-12"><p>加载失败: ' + e.message + '</p></div>';
       }
     }
 
-    // 后台加载所有文章
+    // 后台加载所有完整文章
     async function loadAllArticlesInBackground() {
-      for (const date of allDates) {
+      for (const dateObj of allDates) {
+        const date = dateObj.date;
         loadedArticles[date] = await loadDateData(date);
-        console.log('[DEBUG] loaded', date, ':', loadedArticles[date].length, 'articles');
         loadedCount++;
-        
-        // 每加载完一天就更新显示
-        if (loadedCount === 1) {
-          // 首次加载完成，替换占位符
-          renderTimeline();
-        } else {
-          // 增量更新
-          updateDateBlock(date);
-        }
-        
-        // 更新统计
-        const totalArticles = Object.values(loadedArticles).flat().length;
-        document.getElementById('stats').textContent = `共 ${totalArticles} 条认知 · 跨越 ${totalDays} 天`;
-        
-        // 更新 TOC
-        updateToc();
+        updateDateBlock(date);
+        updateTocDate(date);
       }
-      
-      // 全部加载完成
       document.getElementById('load-more-btn')?.remove();
     }
 
-    // 渲染带占位符的时间线
-    function renderTimelineWithPlaceholders() {
-      const container = document.getElementById('timeline');
-      const catOrder = {'经典智慧': 1, '时事热点': 2, '历史事件': 3};
-      
-      let html = '';
-      allDates.forEach(date => {
-        html += `
-          <div class="mb-10 date-skeleton" id="date-block-${date}">
-            <div class="flex items-center gap-2 mb-4">
-              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0 time-dot"></span>
-              <time class="text-sm text-text/50">${formatDate(date)}</time>
-            </div>
-            <div class="articles-container" id="articles-${date}">
-              <div style="color:rgba(234,234,234,0.3);font-size:0.85rem;padding:0.5rem 0">加载中...</div>
-            </div>
-          </div>
-        `;
-      });
-      
-      container.innerHTML = html;
-    }
-
-    // 完整渲染时间线
+    // 渲染完整时间线（用索引标题先占位，加载完后替换为正文）
     function renderTimeline() {
       const container = document.getElementById('timeline');
       const catOrder = {'经典智慧': 1, '时事热点': 2, '历史事件': 3};
-      
+
       let html = '';
-      allDates.forEach(date => {
-        const dayArticles = loadedArticles[date] || [];
-        html += `
-          <div class="mb-10" id="date-block-${date}">
-            <div class="flex items-center gap-2 mb-4">
-              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0"></span>
-              <time class="text-sm text-text/50">${formatDate(date)}</time>
-            </div>
-            <div class="articles-container" id="articles-${date}">
-              ${dayArticles.length > 0 
-                ? dayArticles.sort((a, b) => (catOrder[a.category] || 99) - (catOrder[b.category] || 99)).map(r => renderItem(r)).join('')
-                : '<div style="color:rgba(234,234,234,0.3);font-size:0.85rem;padding:0.5rem 0">暂无内容</div>'
-              }
-            </div>
+      allDates.forEach(dateObj => {
+        const date = dateObj.date;
+        const indexArticles = dateObj.articles || [];
+        const fullArticles = loadedArticles[date];
+        const isLoaded = fullArticles && fullArticles.length > 0;
+
+        html += `<div class="mb-10" id="date-block-${date}">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0"></span>
+            <time class="text-sm text-text/50">${formatDate(date)}</time>
           </div>
-        `;
+          <div class="articles-container" id="articles-${date}">`;
+
+        if (isLoaded) {
+          html += fullArticles.sort((a,b)=>(catOrder[a.category]||99)-(catOrder[b.category]||99)).map(r=>renderItem(r)).join('');
+        } else if (indexArticles.length > 0) {
+          // 用索引标题渲染占位卡片
+          html += indexArticles.map(a => `
+            <div class="article-card date-skeleton" id="item-${a.id}">
+              <h3 class="article-title" style="color:rgba(234,234,234,0.5)">${a.title}</h3>
+              <div style="color:rgba(234,234,234,0.2);font-size:0.8rem;margin-top:0.5rem">加载中...</div>
+            </div>`).join('');
+        } else {
+          html += '<div style="color:rgba(234,234,234,0.3);font-size:0.85rem;padding:0.5rem 0">加载中...</div>';
+        }
+
+        html += `</div></div>`;
       });
-      
+
       container.innerHTML = html;
     }
 
-    // 更新单个日期区块
+    // 更新单个日期区块（加载完整文章后调用）
     function updateDateBlock(date) {
       const catOrder = {'经典智慧': 1, '时事热点': 2, '历史事件': 3};
-      const block = document.getElementById('date-block-' + date);
       const container = document.getElementById('articles-' + date);
-      
-      if (!block || !container) return;
-      
-      block.classList.remove('date-skeleton');
+      if (!container) return;
+
       const dayArticles = loadedArticles[date] || [];
-      
       if (dayArticles.length > 0) {
-        container.innerHTML = dayArticles.sort((a, b) => (catOrder[a.category] || 99) - (catOrder[b.category] || 99)).map(r => renderItem(r)).join('');
+        container.innerHTML = dayArticles.sort((a,b)=>(catOrder[a.category]||99)-(catOrder[b.category]||99)).map(r=>renderItem(r)).join('');
+        loadCheckinStatus();
       } else {
         container.innerHTML = '<div style="color:rgba(234,234,234,0.3);font-size:0.85rem;padding:0.5rem 0">暂无内容</div>';
       }
     }
 
-    // 更新目录
+    // 渲染目录（用索引标题，立即可用）
     function updateToc() {
       const toc = document.getElementById('toc-content');
-      const catOrder = {'经典智慧': 1, '时事热点': 2, '历史事件': 3};
-      
       let html = '';
-      allDates.forEach(date => {
-        const dayArticles = loadedArticles[date] || [];
-        const isLoaded = dayArticles.length > 0;
-        
+      allDates.forEach(dateObj => {
+        const date = dateObj.date;
+        const articles = dateObj.articles || [];
         html += `<div style="margin-bottom:0.75rem">
           <div onclick="jumpToDate('${date}')" style="color:#22d3ee;font-size:0.75rem;font-weight:700;cursor:pointer;padding:0.25rem 0;border-bottom:1px solid rgba(34,211,238,0.15);margin-bottom:0.375rem">${formatDate(date)}</div>
           <div id="toc-date-${date}">`;
-        
-        if (isLoaded) {
-          html += dayArticles.map(item => 
+        if (articles.length > 0) {
+          html += articles.map(item =>
             `<div onclick="jumpToItem('${item.id}')" style="color:rgba(234,234,234,0.6);font-size:0.75rem;cursor:pointer;padding:0.2rem 0 0.2rem 0.75rem;line-height:1.4" onmouseover="this.style.color='#eaeaea'" onmouseout="this.style.color='rgba(234,234,234,0.6)'">${item.title}</div>`
           ).join('');
         } else {
           html += `<div style="color:rgba(234,234,234,0.3);font-size:0.7rem;padding:0.2rem 0 0.2rem 0.75rem">加载中...</div>`;
         }
-        
         html += `</div></div>`;
       });
-      
       toc.innerHTML = html;
+    }
+
+    // 加载完整文章后更新对应日期的 TOC 条目（无需重建，标题已在索引中）
+    function updateTocDate(date) {
+      // TOC 已用索引标题渲染，无需更新
     }
 
     function jumpToDate(date) {
