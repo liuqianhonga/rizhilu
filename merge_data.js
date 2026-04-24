@@ -72,10 +72,13 @@ allArticles.sort((a, b) => b.id.localeCompare(a.id));
 // Write merged data
 fs.writeFileSync(OUTPUT_FILE, JSON.stringify(allArticles, null, 2), 'utf8');
 
+// Reverse dates index so newest dates come first
+const datesReversed = [...datesIndex].reverse();
+
 // Write dates.json with article index
 const datesData = {
   totalArticles: allArticles.length,
-  dates: datesIndex,
+  dates: datesReversed,
   lastUpdated: new Date().toISOString().slice(0, 10)
 };
 fs.writeFileSync(DATES_FILE, JSON.stringify(datesData, null, 2), 'utf8');
