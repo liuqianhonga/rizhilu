@@ -289,8 +289,6 @@
           allDates = rawDates;
           totalArticlesCount = data.totalArticles || 0;
         }
-        // 新格式日期是升序，翻转为降序（最新在前）
-        allDates = [...allDates].reverse();
         totalDays = allDates.length;
 
         if (totalDays === 0) {
